@@ -231,12 +231,15 @@ shinyServer(function(session, input, output) {
 
     pSeries <- ggplot(seriesDF) +
       geom_line(aes(x=index,y=aSeries)) +
-      geom_line(aes(x=index,y=Curve),color="darkred",size=1) +
       scale_x_continuous(name = "Index",position = "top") +
       labs(y="Raw")
 
+    if(input$detrendMethod != "Ar"){
+      pSeries <- pSeries + geom_line(aes(x=index,y=Curve),color="darkred",size=1)
+    }
+
     pFits <- ggplot(seriesDF) +
-      geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits))),
+      geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits,na.rm=TRUE))),
                  linetype="dashed") +
       geom_line(aes(x=index,y=Fits)) +
       scale_x_continuous(name = "Index") +
@@ -260,7 +263,9 @@ shinyServer(function(session, input, output) {
     req(getSeries())
     req(detrendSelectedSeries())
 
-    rwlRV$ModelInfo
+    res <- rwlRV$ModelInfo
+    return(res)
+
   })
 
 })
