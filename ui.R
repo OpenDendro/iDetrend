@@ -119,23 +119,11 @@ ui <- tagList(
 
 
                       conditionalPanel(condition = "input.detrendMethod == 'ModNegExp'",
-                                       selectInput(inputId = "constrain.nlsModNegExp",
-                                                   label = "When should the parameters of
-                                          the nls function be constrained?",
-                                          choices = c("never","when.fail",
-                                                      "always"),
-                                          selected = "never"),
                                        checkboxInput(inputId = "pos.slopeModNegExp",
                                                      label = "Allow Positive Slope",
                                                      value = FALSE)),
 
                       conditionalPanel(condition = "input.detrendMethod == 'ModHugershoff'",
-                                       selectInput(inputId = "constrain.nlsModHugershoff",
-                                                   label = "When should the parameters of
-                                          the nls function be constrained?",
-                                          choices = c("never","when.fail",
-                                                      "always"),
-                                          selected = "never"),
                                        checkboxInput(inputId = "pos.slopeModHugershoff",
                                                      label = "Allow Positive Slope",
                                                      value = FALSE)),

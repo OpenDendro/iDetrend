@@ -113,7 +113,6 @@ shinyServer(function(session, input, output) {
     nyrs2use = NULL
     f2use = 0.5
     pos.slope2use = FALSE
-    constrain.nls2use = c("never", "when.fail", "always")
     difference2use <- ifelse(input$differenceText == "Difference",TRUE,FALSE)
 
     # update args for each method
@@ -129,12 +128,10 @@ shinyServer(function(session, input, output) {
 
     if(method2use == "ModNegExp"){
       pos.slope2use <- input$pos.slopeModNegExp
-      constrain.nls2use = input$constrain.nls2useModNegExp
     }
 
     if(method2use == "ModHugershoff"){
       pos.slope2use <- input$pos.slopeModHugershoff
-      constrain.nls2use = input$constrain.nls2useModHugershoff
     }
 
     if(method2use == "Friedman"){
@@ -148,7 +145,6 @@ shinyServer(function(session, input, output) {
                           nyrs = nyrs2use,
                           f = f2use,
                           pos.slope = pos.slope2use,
-                          constrain.nls = constrain.nls2use,
                           bass = bass2use,
                           make.plot = FALSE,
                           verbose = FALSE,
@@ -156,7 +152,7 @@ shinyServer(function(session, input, output) {
                           difference = difference2use)
     rwlRV$Curve <- res$curve
     rwlRV$Fits <- res$series
-    rwlRV$ModelInfo <- res$model.info
+    rwlRV$ModelInfo <- res$model.info[[1]]
     #return(res)
   })
 
