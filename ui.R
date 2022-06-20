@@ -82,7 +82,7 @@ ui <- tagList(
              # info on method
              fluidRow(
                column(1),
-               column(4,
+               column(3,
 
                       # choose method
                       selectInput(inputId = "detrendMethod",label = "Choose method",
@@ -135,21 +135,22 @@ ui <- tagList(
                                           the nls function be constrained?",
                                           choices = c("never","when.fail",
                                                       "always"),
-                                          selected = "never")),
+                                          selected = "never"),
+                                       checkboxInput(inputId = "pos.slopeModHugershoff",
+                                                     label = "Allow Positive Slope",
+                                                     value = FALSE)),
 
                       conditionalPanel(condition = "input.detrendMethod == 'Friedman'",
-                                       numericInput(inputId = "wt",
-                                                    label = "case weights, by default all equal",
-                                                    value = NULL, min = 0,max=1,step = 0.05),
-                                       numericInput(inputId = "span",
-                                                    label = "the fraction of the observations in the span",
-                                                    value = NULL,min = 0,max=1,step = 0.05),
                                        numericInput(inputId = "bass",
-                                                    label = "smoothness of the fitted curve",
+                                                    label = "smoothness of the fitted curve (bass)",
                                                     value = 0,min = 0,max=10,step = 1))
                ),
-               column(6,
+               column(4,
                       verbatimTextOutput(outputId = "detrendInfo")
+               ),
+               column(4,
+                      actionButton(inputId = "saveSeries", "Save RWI"),
+                      actionButton(inputId = "revertSeries", "Undo Save")
                ),
                column(1)
              )

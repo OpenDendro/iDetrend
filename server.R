@@ -118,7 +118,7 @@ shinyServer(function(session, input, output) {
 
     # update args for each method
     if(method2use == "AgeDepSpline"){
-      nyrs2use <- input$nyrADS
+      nyrs2use <- input$nyrsADS
       pos.slope2use <- input$pos.slopeADS
     }
 
@@ -131,18 +131,29 @@ shinyServer(function(session, input, output) {
       pos.slope2use <- input$pos.slopeModNegExp
       constrain.nls2use = input$constrain.nls2useModNegExp
     }
+
+    if(method2use == "ModHugershoff"){
+      pos.slope2use <- input$pos.slopeModHugershoff
+      constrain.nls2use = input$constrain.nls2useModHugershoff
+    }
+
+    if(method2use == "Friedman"){
+      bass2use <- input$bass
+    }
+
     #wt, span = "cv", bass = 0,
 
     res <- detrend.series(y = df$aSeries,
-                                       method = method2use,
-                                       nyrs = nyrs2use,
-                                       f = f2use,
-                                       pos.slope = pos.slope2use,
-                                       constrain.nls = constrain.nls2use,
-                                       make.plot = FALSE,
-                                       verbose = FALSE,
-                                       return.info = TRUE,
-                                       difference = difference2use)
+                          method = method2use,
+                          nyrs = nyrs2use,
+                          f = f2use,
+                          pos.slope = pos.slope2use,
+                          constrain.nls = constrain.nls2use,
+                          bass = bass2use,
+                          make.plot = FALSE,
+                          verbose = FALSE,
+                          return.info = TRUE,
+                          difference = difference2use)
     rwlRV$Curve <- res$curve
     rwlRV$Fits <- res$series
     rwlRV$ModelInfo <- res$model.info
@@ -220,12 +231,16 @@ shinyServer(function(session, input, output) {
 
     pSeries <- ggplot(seriesDF) +
       geom_line(aes(x=index,y=aSeries)) +
-      geom_line(aes(x=index,y=Curve)) +
-      scale_x_continuous(name = "Index",position = "top")
+      geom_line(aes(x=index,y=Curve),color="darkred",size=1) +
+      scale_x_continuous(name = "Index",position = "top") +
+      labs(y="Raw")
 
     pFits <- ggplot(seriesDF) +
+      geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits))),
+                 linetype="dashed") +
       geom_line(aes(x=index,y=Fits)) +
-      scale_x_continuous(name = "Index")
+      scale_x_continuous(name = "Index") +
+      labs(y="RWI")
 
     # make sure the axes are the same precision.
     pSeries <- pSeries +
@@ -234,6 +249,8 @@ shinyServer(function(session, input, output) {
     pFits <- pFits +
       scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
 
+    pSeries <- pSeries + theme_minimal()
+    pFits <- pFits + theme_minimal()
 
     grid.arrange(pSeries,pFits)
 
@@ -244,7 +261,7 @@ shinyServer(function(session, input, output) {
     req(detrendSelectedSeries())
 
     rwlRV$ModelInfo
-    })
+  })
 
 })
 
