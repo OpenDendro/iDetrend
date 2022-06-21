@@ -1,12 +1,3 @@
-library(shiny)
-library(rmarkdown)
-library(markdown)
-library(dplR)
-library(DT)
-library(shinyWidgets)
-library(tidyverse)
-library(shinyjs)
-library(gridExtra)
 
 shinyServer(function(session, input, output) {
 
@@ -71,8 +62,8 @@ shinyServer(function(session, input, output) {
   # Get the RWL file from the user at the start or use demo data
   getRWL <- reactive({
     if (input$useDemoDated) {
-      data(wa082)
-      dat <- wa082
+      data(nm046)
+      dat <- nm046
       rwlRV$theRWL <- dat
       return(dat)
     }
@@ -99,19 +90,20 @@ shinyServer(function(session, input, output) {
       drop_na() %>%
       mutate(index = 1:length(yrs))
     rwlRV$theSeriesDF <- df
+    rwlRV$nyrsInit <- floor(length(df$aSeries)/2)
   })
 
   # do the detrending
   detrendSelectedSeries <- reactive({
     req(getSeries())
     df <- rwlRV$theSeriesDF
+
     # set detrend args here. I don't understand why these can't be
     # gotten dynamically from the UI but they don't update unless explicitly
     # set here I think
     method2use = input$detrendMethod
     # init defaults
     nyrs2use = NULL
-    f2use = 0.5
     pos.slope2use = FALSE
     difference2use <- ifelse(input$differenceText == "Difference",TRUE,FALSE)
 
@@ -123,7 +115,6 @@ shinyServer(function(session, input, output) {
 
     if(method2use == "Spline"){
       nyrs2use <- input$nyrsCAPS
-      f2use <- input$f
     }
 
     if(method2use == "ModNegExp"){
@@ -134,18 +125,17 @@ shinyServer(function(session, input, output) {
       pos.slope2use <- input$pos.slopeModHugershoff
     }
 
-    if(method2use == "Friedman"){
-      bass2use <- input$bass
-    }
+    #    if(method2use == "Friedman"){
+    #      bass2use <- input$bass
+    #    }
 
     #wt, span = "cv", bass = 0,
 
     res <- detrend.series(y = df$aSeries,
                           method = method2use,
                           nyrs = nyrs2use,
-                          f = f2use,
                           pos.slope = pos.slope2use,
-                          bass = bass2use,
+                          bass = input$bass,
                           make.plot = FALSE,
                           verbose = FALSE,
                           return.info = TRUE,
@@ -153,7 +143,16 @@ shinyServer(function(session, input, output) {
     rwlRV$Curve <- res$curve
     rwlRV$Fits <- res$series
     rwlRV$ModelInfo <- res$model.info[[1]]
-    #return(res)
+    rwlRV$DirtyDog <- res$dirtyDog
+    rwlRV$DetrendParams <- c(seriesName = input$series,
+                             method = method2use,
+                             nyrs = nyrs2use,
+                             pos.slope = pos.slope2use,
+                             bass = input$bass,
+                             make.plot = FALSE,
+                             verbose = FALSE,
+                             return.info = TRUE,
+                             difference = difference2use)
   })
 
 
@@ -228,7 +227,7 @@ shinyServer(function(session, input, output) {
     pSeries <- ggplot(seriesDF) +
       geom_line(aes(x=index,y=aSeries)) +
       scale_x_continuous(name = "Index",position = "top") +
-      labs(y="Raw")
+      labs(y="Raw",title=paste0("Series: ",input$series))
 
     if(input$detrendMethod != "Ar"){
       pSeries <- pSeries + geom_line(aes(x=index,y=Curve),color="darkred",size=1)
@@ -258,11 +257,33 @@ shinyServer(function(session, input, output) {
   output$detrendInfo <- renderPrint({
     req(getSeries())
     req(detrendSelectedSeries())
-
-    res <- rwlRV$ModelInfo
-    return(res)
+    methodUsed <- rwlRV$ModelInfo$method
+    # add conditional here about model method vs fit
+    if(input$detrendMethod == "Ar" & rwlRV$DirtyDog){
+      outMsg <- cat("Fits from method=='Ar' are not all positive. Setting values <0 to 0 before rescaling. This might not be what you want. ARSTAN would tell you to plot that dirty dog at this point. Proceed with caution.")
+    }
+    # return some text. this should be html
+    return(rwlRV$DirtyDog)
 
   })
+
+  output$detrendCall <- renderText({
+    req(getSeries())
+    req(detrendSelectedSeries())
+    tmp <- rwlRV$DetrendParams
+    theCall <- paste0("rwi",tmp["seriesName"]," <- detrend.series(y = dat[,`",
+                      tmp["seriesName"],"`],",
+                      "make.plot = FALSE,",
+                      "method = '",tmp["method"], "',",
+                      "nyrs = ", tmp["nyrs"], ",",
+                      "pos.slope = ", tmp["pos.slope"], ",",
+                      "bass = ", tmp["bass"], ",",
+                      "difference =", tmp["difference"], ")")
+
+    theCall
+
+  })
+
 
 })
 

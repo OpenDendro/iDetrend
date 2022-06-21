@@ -1,0 +1,43 @@
+---
+title: "Report: How a series was detrended"
+output: html_document
+params:
+  fileName: NA
+  seriesObject: NA
+  dsParams: NA
+---
+
+ 
+
+```{r,echo=FALSE}
+library(DT)
+library(knitr)
+library(kableExtra)
+seriesObject <- params$crsObject
+dsParams <- params$crsParams
+```
+
+
+```{r,echo=FALSE}
+if(is.null(params$fileName)){
+  fname <- "DemoData.rwl"
+}
+
+if(!is.null(params$fileName)){
+  fname <- params$fileName
+  }
+
+```
+
+### Date: `r Sys.Date()`
+
+### File: `r fname`
+
+### Series: Series name here
+
+### R Code
+```
+library(dplR)
+dat <- read.rwl("`r fname`")
+
+```
