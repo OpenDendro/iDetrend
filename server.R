@@ -1,61 +1,30 @@
+server <- function(input, output, session) {
 
-shinyServer(function(session, input, output) {
+  ##############################################################
+  #
+  # Reactive Values
+  #
+  ##############################################################
 
-  # Declare a few things
-
-  # Initiate an object (empty now) that will hold the rwl data
-  # (and a backup). The advantage of this is that it can be edited
-  # and saved between tabs
   rwlRV <- reactiveValues()
+
   # Here are the elements of rwlRV. These don't need to be declared here
   # but I want to keep track of what's in the object as a matter of best
   # practices
 
   rwlRV$theRWL <- NULL           # the rwl object
+  rwlRV$nSeries <- NULL          # the number of series
   rwlRV$theSeriesDF <- NULL      # the series as a df
   rwlRV$Curve <- NULL            # the curve
   rwlRV$Fits <- NULL             # the fits
   rwlRV$ModelInfo <- NULL        # modelInfo
-
-  ##############################################################
-  #
-  # START observations
-  #
-  ##############################################################
-
-
-  # When app is initiated, hide all the tabs but the first one.
-  # This creates an observer so that they can be toggled when triggered
-  # by an event
-
-  # get series names
-  observeEvent(
-    eventExpr = {
-      getRWL()
-    },
-    handlerExpr = {
-      updateSelectInput(session = session,
-                        inputId = "series",
-                        choices=colnames(rwlRV$theRWL),
-                        selected=colnames(rwlRV$theRWL[1]))
-    },
-    label = "observe series being selected and update the dropdown")
+  rwlRV$theRWI <- NULL           # the stored RWI
 
 
 
   ##############################################################
   #
-  # END observations
-  #
-  ##############################################################
-
-
-  ##############################################################
-  #
-  # START reactives
-  #
-  # we use reactives for so that calculations (like corr.rwl.seg)
-  # need to be done only once.
+  # Reactives
   #
   ##############################################################
 
@@ -65,6 +34,8 @@ shinyServer(function(session, input, output) {
       data(nm046)
       dat <- nm046
       rwlRV$theRWL <- dat
+      rwlRV$nSeries <- ncol(dat)
+      rwlRV$theRWI <- dat
       return(dat)
     }
     inFile <- input$file1
@@ -76,97 +47,17 @@ shinyServer(function(session, input, output) {
       # But we also don't want to add arguments.
       dat <- read.rwl(inFile$datapath)
       rwlRV$theRWL <- dat
+      rwlRV$nSeries <- ncol(dat)
+      rwlRV$theRWI <- dat
       return(dat)
     }
 
   })
 
-  # Get a series to use
-  getSeries <- reactive({
-    req(getRWL())
-    dat <- rwlRV$theRWL
-    df <- data.frame(yrs = time(dat),
-                     aSeries = dat[,input$series]) %>%
-      drop_na() %>%
-      mutate(index = 1:length(yrs))
-    rwlRV$theSeriesDF <- df
-    rwlRV$nyrsInit <- floor(length(df$aSeries)/2)
-  })
-
-  # do the detrending
-  detrendSelectedSeries <- reactive({
-    req(getSeries())
-    df <- rwlRV$theSeriesDF
-
-    # set detrend args here. I don't understand why these can't be
-    # gotten dynamically from the UI but they don't update unless explicitly
-    # set here I think
-    method2use = input$detrendMethod
-    # init defaults
-    nyrs2use = NULL
-    pos.slope2use = FALSE
-    difference2use <- ifelse(input$differenceText == "Difference",TRUE,FALSE)
-
-    # update args for each method
-    if(method2use == "AgeDepSpline"){
-      nyrs2use <- input$nyrsADS
-      pos.slope2use <- input$pos.slopeADS
-    }
-
-    if(method2use == "Spline"){
-      nyrs2use <- input$nyrsCAPS
-    }
-
-    if(method2use == "ModNegExp"){
-      pos.slope2use <- input$pos.slopeModNegExp
-    }
-
-    if(method2use == "ModHugershoff"){
-      pos.slope2use <- input$pos.slopeModHugershoff
-    }
-
-    #    if(method2use == "Friedman"){
-    #      bass2use <- input$bass
-    #    }
-
-    #wt, span = "cv", bass = 0,
-
-    res <- detrend.series(y = df$aSeries,
-                          method = method2use,
-                          nyrs = nyrs2use,
-                          pos.slope = pos.slope2use,
-                          bass = input$bass,
-                          make.plot = FALSE,
-                          verbose = FALSE,
-                          return.info = TRUE,
-                          difference = difference2use)
-    rwlRV$Curve <- res$curve
-    rwlRV$Fits <- res$series
-    rwlRV$ModelInfo <- res$model.info[[1]]
-    rwlRV$DirtyDog <- res$dirtyDog
-    rwlRV$DetrendParams <- c(seriesName = input$series,
-                             method = method2use,
-                             nyrs = nyrs2use,
-                             pos.slope = pos.slope2use,
-                             bass = input$bass,
-                             make.plot = FALSE,
-                             verbose = FALSE,
-                             return.info = TRUE,
-                             difference = difference2use)
-  })
-
-
 
   ##############################################################
   #
-  # END reactives
-  #
-  ##############################################################
-
-
-  ##############################################################
-  #
-  # 2nd tab Describe RWL Data
+  # Server logic for loading and describing the input data
   #
   ##############################################################
 
@@ -187,103 +78,194 @@ shinyServer(function(session, input, output) {
     req(getRWL())
     summary(rwlRV$theRWL)
   })
-  # -- make report
-  output$rwlSummaryReport <- downloadHandler(
-    filename = "rwl_summary_report.html",
-    content = function(file) {
-
-      tempReport <- file.path(tempdir(), "report_rwl_describe.Rmd")
-      file.copy("report_rwl_describe.Rmd", tempReport, overwrite = TRUE)
-
-      rwlObject <- rwlRV$theRWL
-      params <- list(fileName = input$file1$name, rwlObject=rwlObject,
-                     rwlPlotType=input$rwlPlotType)
-
-      # Knit the document, passing in the `params` list, and eval it in a
-      # child of the global environment (this isolates the code in the document
-      # from the code in this app). Defensive
-      rmarkdown::render(tempReport, output_file = file,
-                        params = params,
-                        envir = new.env(parent = globalenv())
-      )
-    }
-  )
 
   ##############################################################
   #
-  # 3rd tab Detrend those things
+  # Server logic for for walking through each series and
+  # detrending
   #
   ##############################################################
 
-  output$seriesPlot <- renderPlot({
-    req(getSeries())
-    req(detrendSelectedSeries())
+  # This is the server logic that will render the UI for the detrending.
+  # All of the widgets will go in here. note the do.call below for `screens`
+  output$series_screens <- renderUI({
+    req(getRWL())
+    dat <- rwlRV$theRWL
+    rwi <- dat
+    lapply(1:rwlRV$nSeries, function(i) {
+      output[[paste0("series", i, "Plot")]] <- renderPlot({
 
-    seriesDF <- rwlRV$theSeriesDF
-    seriesDF$Curve <- rwlRV$Curve
-    seriesDF$Fits <- rwlRV$Fits
+        #### detrend
+        mask <- is.na(dat[,i])
+        seriesDF <- data.frame(y=dat[,i]) %>%
+          drop_na() %>%
+          mutate(x=1:length(y))
+
+        # set detrend args here.
+        method2use = input[[paste0("detrendMethod", i)]]
+        # init defaults
+        nyrs2use = NULL
+        pos.slope2use = FALSE
+        difference2use <- ifelse(input[[paste0("differenceText",i)]] == "Difference",TRUE,FALSE)
+
+        # update args for each method
+        if(method2use == "AgeDepSpline"){
+          nyrs2use <- input[[paste0("nyrsADS",i)]]
+          pos.slope2use <- input[[paste0("pos.slopeADS",i)]]
+        }
+
+        if(method2use == "Spline"){
+          nyrs2use <- input[[paste0("nyrsCAPS",i)]]
+        }
+
+        if(method2use == "ModNegExp"){
+          pos.slope2use <- input[[paste0("pos.slopeModNegExp",i)]]
+        }
+
+        if(method2use == "ModHugershoff"){
+          pos.slope2use <- input[[paste0("pos.slopeModHugershoff",i)]]
+        }
+
+        if(method2use == "Friedman"){
+          bass2use <- input[[paste0("bass",i)]]
+        }
+
+        res <- detrend.series(y = seriesDF$y,
+                              method = method2use,
+                              nyrs = nyrs2use,
+                              pos.slope = pos.slope2use,
+                              bass = bass2use,
+                              make.plot = FALSE,
+                              verbose = FALSE,
+                              return.info = TRUE,
+                              difference = difference2use)
+        seriesDF$Curve <- res$curve
+        seriesDF$Fits <- res$series
+
+        ### save output -- why does this need to be in isolate.
+        ### adding observe didn't do anything with isolate
+        ### and observe alone didn't work
+        #observe({
+          isolate(rwlRV$theRWI[!mask,i] <- seriesDF$Fits)
+        #})
+
+        ### get info on the fit you'll want iso again I bet.
+
+        #rwlRV$ModelInfo <- res$model.info[[1]]
+        #rwlRV$DirtyDog <- res$dirtyDog
+        #rwlRV$DetrendParams <- c(seriesName = input$series,
+        #                         method = method2use,
+        #                         nyrs = nyrs2use,
+        #                         pos.slope = pos.slope2use,
+        #                         bass = input$bass,
+        #                         make.plot = FALSE,
+        #                         verbose = FALSE,
+        #                         return.info = TRUE,
+        #                         difference = difference2use)
+
+        ### make the plot and return it
+        pSeries <- ggplot(seriesDF) +
+          geom_line(aes(x=x,y=y)) +
+          scale_x_continuous(name = "Index",position = "top") +
+          labs(y="Raw",title=paste0("Series: ",names(dat)[i]))
+
+        if(method2use != "Ar"){
+          pSeries <- pSeries + geom_line(aes(x=x,y=Curve),color="darkred",size=1)
+        }
+
+        pFits <- ggplot(seriesDF) +
+          geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits,na.rm=TRUE))),
+                     linetype="dashed") +
+          geom_line(aes(x=x,y=Fits)) +
+          scale_x_continuous(name = "Index") +
+          labs(y="RWI")
+
+        # make sure the axes are the same precision.
+        pSeries <- pSeries +
+          scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
+
+        pFits <- pFits +
+          scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
+
+        pSeries <- pSeries + theme_minimal()
+        pFits <- pFits + theme_minimal()
+
+        pCombined <- grid.arrange(pSeries,pFits)
+
+        return(pCombined)
+      })
+    })
+
+    ### Set up the screens
+    screens <- c(
+      lapply(1:rwlRV$nSeries, function(i) {
+        screen(
+          p(paste0("Series ", i, " of ", rwlRV$nSeries)),
+          selectInput(inputId = paste0("differenceText",i),
+                      label = "Residual Method",
+                      choices = c("Division","Difference"),
+                      selected = "Ratio"),
+          selectInput(inputId = paste0("detrendMethod",i),
+                      label = "Detrend Method",
+                      choices = c("AgeDepSpline", "Spline",
+                                  "ModNegExp", "Mean",
+                                  "Ar", "Friedman",
+                                  "ModHugershoff"),
+                      selected = "AgeDepSpline"),
+
+          # conditional arguments for specific methods
+
+          conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Spline'"),
+                           numericInput(inputId = paste0("nyrsCAPS",i),
+                                        label = "Spline Stiffness",
+                                        #value = floor(length(na.omit(rwlRV$theRWL[,i])/2)),
+                                        value=100,
+                                        min = 10,
+                                        max=1e3,
+                                        step = 10)),
+
+          conditionalPanel(condition = paste0("input.detrendMethod",i," == 'AgeDepSpline'"),
+                           numericInput(inputId = paste0("nyrsADS",i),
+                                        label = "Initial Spline Stiffness",
+                                        value = 50,
+                                        min = 1,
+                                        max=200,
+                                        step = 1),
+                           checkboxInput(inputId = paste0("pos.slopeADS",i),
+                                         label = "Allow Positive Slope",
+                                         value = FALSE)),
 
 
-    pSeries <- ggplot(seriesDF) +
-      geom_line(aes(x=index,y=aSeries)) +
-      scale_x_continuous(name = "Index",position = "top") +
-      labs(y="Raw",title=paste0("Series: ",input$series))
+          conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModNegExp'"),
+                           checkboxInput(inputId = paste0("pos.slopeModNegExp",i),
+                                         label = "Allow Positive Slope",
+                                         value = FALSE)),
 
-    if(input$detrendMethod != "Ar"){
-      pSeries <- pSeries + geom_line(aes(x=index,y=Curve),color="darkred",size=1)
-    }
+          conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModHugershoff'"),
+                           checkboxInput(inputId = paste0("pos.slopeModHugershoff",i),
+                                         label = "Allow Positive Slope",
+                                         value = FALSE)),
 
-    pFits <- ggplot(seriesDF) +
-      geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits,na.rm=TRUE))),
-                 linetype="dashed") +
-      geom_line(aes(x=index,y=Fits)) +
-      scale_x_continuous(name = "Index") +
-      labs(y="RWI")
+          conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Friedman'"),
+                           numericInput(inputId = paste0("bass",i),
+                                        label = "smoothness of the fitted curve (bass)",
+                                        value = 0,min = 0,max=10,step = 1)),
 
-    # make sure the axes are the same precision.
-    pSeries <- pSeries +
-      scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-
-    pFits <- pFits +
-      scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-
-    pSeries <- pSeries + theme_minimal()
-    pFits <- pFits + theme_minimal()
-
-    grid.arrange(pSeries,pFits)
-
+          #####
+          plotOutput(paste0("series", i, "Plot"))
+        )
+      })
+    )
+    do.call(glide, screens)
   })
 
-  output$detrendInfo <- renderPrint({
-    req(getSeries())
-    req(detrendSelectedSeries())
-    methodUsed <- rwlRV$ModelInfo$method
-    # add conditional here about model method vs fit
-    if(input$detrendMethod == "Ar" & rwlRV$DirtyDog){
-      outMsg <- cat("Fits from method=='Ar' are not all positive. Setting values <0 to 0 before rescaling. This might not be what you want. ARSTAN would tell you to plot that dirty dog at this point. Proceed with caution.")
-    }
-    # return some text. this should be html
-    return(rwlRV$DirtyDog)
+  ##############################################################
+  #
+  # Server logic for results
+  #
+  ##############################################################
 
+  output$summaryResults <- renderTable({
+    rwlRV$theRWI
   })
-
-  output$detrendCall <- renderText({
-    req(getSeries())
-    req(detrendSelectedSeries())
-    tmp <- rwlRV$DetrendParams
-    theCall <- paste0("rwi",tmp["seriesName"]," <- detrend.series(y = dat[,`",
-                      tmp["seriesName"],"`],",
-                      "make.plot = FALSE,",
-                      "method = '",tmp["method"], "',",
-                      "nyrs = ", tmp["nyrs"], ",",
-                      "pos.slope = ", tmp["pos.slope"], ",",
-                      "bass = ", tmp["bass"], ",",
-                      "difference =", tmp["difference"], ")")
-
-    theCall
-
-  })
-
-
-})
-
+}
