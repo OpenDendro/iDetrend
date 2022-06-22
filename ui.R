@@ -40,7 +40,7 @@ ui <- tagList(
                checkboxInput(inputId="useDemoDated", label="Use example data",
                              value=TRUE),
                hr(),
-               plotOutput("rwlPlot"),
+               plotOutput("rwlPlot",width = 750),
                selectInput(inputId="rwlPlotType", label="Plot Type",
                            choices=c("seg","spag"),
                            selected = "seg"),
