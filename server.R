@@ -60,8 +60,12 @@ server <- function(input, output, session) {
                                    actual=rep(NA,ncol(dat)))
     # the dirty dogs -- vector
     rwlRV$dirtyDogs <- ncol(dat)
-    # params -- list dim it?
-    rwlRV$detrendParams <- list()
+    # params --
+    rwlRV$detrendParams <- data.frame(method = rep(NA,ncol(dat)),
+                                      nyrs = rep(NA,ncol(dat)),
+                                      pos.slope =rep(NA,ncol(dat)),
+                                      bass = rep(NA,ncol(dat)),
+                                      difference=rep(NA,ncol(dat)))
   })
   ##############################################################
   #
@@ -119,8 +123,9 @@ server <- function(input, output, session) {
         # set detrend args here.
         method2use = input[[paste0("detrendMethod", i)]]
         # init defaults
-        nyrs2use = NULL
+        nyrs2use = NA
         pos.slope2use = FALSE
+        bass2use = NA
         difference2use <- ifelse(input[[paste0("differenceText",i)]] == "Difference",TRUE,FALSE)
 
         # update args for each method
@@ -169,15 +174,11 @@ server <- function(input, output, session) {
           rwlRV$dirtyDogs[i] <- res$dirtyDog
           # make these conditional on method here? above?
           rwlRV$methodInfo[i,2] <- res$model.info[[1]]$method
-          rwlRV$detrendParams[[i]] <- c(seriesName = input$series,
-                                        method = method2use,
-                                        nyrs = nyrs2use,
-                                        pos.slope = pos.slope2use,
-                                        bass = input$bass,
-                                        make.plot = FALSE,
-                                        verbose = FALSE,
-                                        return.info = TRUE,
-                                        difference = difference2use)
+          rwlRV$detrendParams[i,] <- c(method2use,
+                                       nyrs2use,
+                                       pos.slope2use,
+                                       bass2use,
+                                       difference = difference2use)
         })
         #})
 
@@ -233,8 +234,10 @@ server <- function(input, output, session) {
         pFits <- pFits +
           scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
 
-        pSeries <- pSeries + theme_minimal(base_size = 14)
-        pFits <- pFits + theme_minimal(base_size = 14)
+        pSeries <- pSeries + theme_minimal(base_size = 14) +
+          theme(plot.background = element_rect(color = "grey70",size=0.5))
+        pFits <- pFits + theme_minimal(base_size = 14) +
+          theme(plot.background = element_rect(color = "grey70",size=0.5))
 
         pCombined <- grid.arrange(pSeries,pFits)
 
@@ -262,8 +265,8 @@ server <- function(input, output, session) {
                                              "Mean",
                                              "ModHugershoff",
                                              "ModNegExp",
-                                             "Spline"),
-                                 selected = "AgeDepSpline")),
+                                             "Spline"))),
+
               column(4,
 
                      # conditional arguments for specific methods
@@ -308,14 +311,12 @@ server <- function(input, output, session) {
               )), # end col
             fluidRow(
               hr(),
-              p(paste0("Series ", i, " of ", nSeries))
+              h5(paste0("Series ", i, " of ", nSeries))
             ),
             #####
             fluidRow(
               plotOutput(paste0("series", i, "Plot"))
             )
-
-            #### Diagnostics
           )
         )
       })
@@ -346,9 +347,34 @@ server <- function(input, output, session) {
     }
   )
 
+  output$detrendReport <- downloadHandler(
+    filename = "detrend_report.html",
+    content = function(file) {
+
+      tempReport <- file.path(tempdir(), "report_detrended_series.Rmd")
+      file.copy("report_detrended_series.Rmd", tempReport, overwrite = TRUE)
+
+      rwlObject <- rwlRV$theRWL
+      params <- list(fileName = input$file1$name, rwlObject=rwlRV$theRWL,
+                     indivSeriesParam=rwlRV$detrendParams)
+
+      # Knit the document, passing in the `params` list, and eval it in a
+      # child of the global environment (this isolates the code in the document
+      # from the code in this app). Defensive
+      rmarkdown::render(tempReport, output_file = file,
+                        params = params,
+                        envir = new.env(parent = globalenv())
+      )
+    }
+  )
+
   output$tableRWI <- renderDataTable({
     rwiOut <-  rwlRV$theRWI
     datatable(rwiOut) %>%
       formatRound(columns = 1:ncol(rwiOut), digits = 3)
+  })
+  output$tableParams <- renderDataTable({
+    pOut <-  rwlRV$detrendParams
+    datatable(pOut)
   })
 }

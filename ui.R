@@ -1,12 +1,22 @@
-library(shiny)
-library(rmarkdown)
-library(markdown)
-library(dplR)
-library(tidyverse)
-library(shinyjs)
-library(gridExtra)
-library(shinyglide)
-library(DT)
+#list of packages required
+list.of.packages <- c("shiny","rmarkdown","markdown","dplR",
+                      "tidyverse","shinyjs","gridExtra","shinyglide","DT")
+#checking missing packages from list
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+
+#install missing ones
+if(length(new.packages)) install.packages(new.packages, dependencies = TRUE)
+
+
+require(shiny)
+require(rmarkdown)
+require(markdown)
+require(dplR)
+require(tidyverse)
+require(shinyjs)
+require(gridExtra)
+require(shinyglide)
+require(DT)
 
 ui <- tagList(
   useShinyjs(),
@@ -68,11 +78,16 @@ ui <- tagList(
                  downloadButton('downloadRWI', 'Download RWI'),
                  helpText("The rwl file is writen as csv and readable
                           by standard dendro programs.(e.g.,
-                          read.rwl() in dplR).")
+                          read.rwl() in dplR)."),
+                 downloadButton("detrendReport", "Generate report"),
+                 helpText("The report is self contained and will
+                          allow reproducibility from the R prompt.")
                ),
                mainPanel(
                  fluidPage(
                    fluidRow(
+                     h3("Params (RWI)"),
+                     dataTableOutput("tableParams"),
                      h3("Detrended data (RWI)"),
                      dataTableOutput("tableRWI")
                    )
