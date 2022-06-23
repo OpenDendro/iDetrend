@@ -169,7 +169,7 @@ server <- function(input, output, session) {
         #observe({
         isolate({
           # save
-          rwlRV$theRWI[!mask,i] <- res$curve
+          rwlRV$theRWI[!mask,i] <- res$series
           rwlRV$methodInfo[i,1] <- method2use
           rwlRV$dirtyDogs[i] <- res$dirtyDog
           # make these conditional on method here? above?
@@ -368,13 +368,27 @@ server <- function(input, output, session) {
     }
   )
 
+  output$plotRWI <- renderPlotly({
+    dat <-  rwlRV$theRWI %>%
+      rownames_to_column(var = "Years") %>%
+      mutate(Years = as.numeric(Years)) %>%
+      pivot_longer(cols = -Years,names_to = "Series",values_to = "RWI")
+
+    plot_ly(
+      dat,
+      x = ~Years,
+      y = ~RWI,
+      type="scatter",
+      split = ~Series,
+      mode = "lines",
+      hoverinfo = "split"
+    )
+  })
+
+
   output$tableRWI <- renderDataTable({
     rwiOut <-  rwlRV$theRWI
     datatable(rwiOut) %>%
       formatRound(columns = 1:ncol(rwiOut), digits = 3)
-  })
-  output$tableParams <- renderDataTable({
-    pOut <-  rwlRV$detrendParams
-    datatable(pOut)
   })
 }

@@ -17,6 +17,8 @@ require(shinyjs)
 require(gridExtra)
 require(shinyglide)
 require(DT)
+require(plotly)
+
 
 ui <- tagList(
   useShinyjs(),
@@ -34,8 +36,6 @@ ui <- tagList(
                h3("Introduction"),
                includeMarkdown("text_intro.rmd"),
                hr(),
-               includeMarkdown("text_describe.rmd"),
-               hr(),
                h3("Upload RWL"),
                includeMarkdown("text_upload.rmd"),
                hr(),
@@ -51,6 +51,8 @@ ui <- tagList(
                checkboxInput(inputId="useDemoDated",
                              label="Use example data",
                              value=TRUE),
+               hr(),
+               includeMarkdown("text_describe.rmd"),
                hr(),
                plotOutput("rwlPlot",width = 750),
                selectInput(inputId="rwlPlotType", label="Plot Type",
@@ -72,28 +74,32 @@ ui <- tagList(
 
     # 3rd tab results ----
     tabPanel(title="3. Results",value="ResultsTab",
-             sidebarLayout(
-               sidebarPanel(
-                 h5("Save RWI Data"),
-                 downloadButton('downloadRWI', 'Download RWI'),
-                 helpText("The rwl file is writen as csv and readable
-                          by standard dendro programs.(e.g.,
-                          read.rwl() in dplR)."),
-                 downloadButton("detrendReport", "Generate report"),
-                 helpText("The report is self contained and will
-                          allow reproducibility from the R prompt.")
+             fluidPage(
+               fluidRow(
+                      plotlyOutput("plotRWI")
                ),
-               mainPanel(
-                 fluidPage(
-                   fluidRow(
-                     h3("Params (RWI)"),
-                     dataTableOutput("tableParams"),
-                     h3("Detrended data (RWI)"),
-                     dataTableOutput("tableRWI")
-                   )
-                 )
+               hr(),
+               fluidRow(
+                 #column(6,
+                        h5("Save RWI Data"),
+                        downloadButton('downloadRWI', 'Download RWI'),
+                        helpText("The rwl file is writen as csv and readable
+                          by standard dendro programs.(e.g.,
+                          read.rwl() in dplR).")
+                 #),
+                 #column(6,
+                #        h5("Generate Report"),
+                #        downloadButton("detrendReport", "Generate report"),
+                #        helpText("The report is self contained and will
+                #          allow reproducibility from the R prompt.")
+                # )
+               ),
+               hr(),
+               fluidRow(
+                 h5("Detrended data (RWI)"),
+                 dataTableOutput("tableRWI")
                )
-             ) # end sidebarLayout
+             )
     ) # end tab 3
 
   ) # end the navbar
