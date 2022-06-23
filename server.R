@@ -81,7 +81,7 @@ server <- function(input, output, session) {
     plot.rwl(rwlRV$theRWL,plot.type = input$rwlPlotType)
   })
 
-  # -- summary
+  # -- summary rwl
   output$rwlSummary <- renderTable({
     req(getRWL())
     summary(rwlRV$theRWL)
@@ -157,7 +157,7 @@ server <- function(input, output, session) {
         seriesDF$Curve <- res$curve
         seriesDF$Fits <- res$series
 
-       print(i)
+        #print(i) # diag
         ### save output -- why does this need to be in isolate.
         ### adding observe didn't do anything with isolate
         ### and observe alone didn't work
@@ -211,7 +211,7 @@ server <- function(input, output, session) {
         ### make the plot and return it
         pSeries <- ggplot(seriesDF) +
           geom_line(aes(x=x,y=y)) +
-          scale_x_continuous(name = "Index",position = "top") +
+          scale_x_continuous(name = "Index",position = "top",expand=c(0,0)) +
           labs(y="Raw",title=paste0("Series: ",names(dat)[i]),
                subtitle = subTxt)
 
@@ -223,7 +223,7 @@ server <- function(input, output, session) {
           geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits,na.rm=TRUE))),
                      linetype="dashed") +
           geom_line(aes(x=x,y=Fits)) +
-          scale_x_continuous(name = "Index") +
+          scale_x_continuous(name = "Index",expand=c(0,0)) +
           labs(y="RWI",caption = capTxt)
 
         # make sure the axes are the same precision.
@@ -233,8 +233,8 @@ server <- function(input, output, session) {
         pFits <- pFits +
           scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
 
-        pSeries <- pSeries + theme_minimal()
-        pFits <- pFits + theme_minimal()
+        pSeries <- pSeries + theme_minimal(base_size = 14)
+        pFits <- pFits + theme_minimal(base_size = 14)
 
         pCombined <- grid.arrange(pSeries,pFits)
 
@@ -257,31 +257,35 @@ server <- function(input, output, session) {
               column(4,
                      selectInput(inputId = paste0("detrendMethod",i),
                                  label = "Detrend Method",
-                                 choices = c("AgeDepSpline", "Spline",
-                                             "ModNegExp", "Mean",
+                                 choices = c("AgeDepSpline",
                                              "Ar", "Friedman",
-                                             "ModHugershoff"),
+                                             "Mean",
+                                             "ModHugershoff",
+                                             "ModNegExp",
+                                             "Spline"),
                                  selected = "AgeDepSpline")),
               column(4,
 
                      # conditional arguments for specific methods
 
+                     # note gymnastics to get pretty niumbers on sliders :/
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Spline'"),
-                                      numericInput(inputId = paste0("nyrsCAPS",i),
-                                                   label = "Spline Stiffness",
-                                                   value = floor(length(na.omit(rwlRV$theRWL[,i])/2)),
-                                                   #value=100,
-                                                   min = 10,
-                                                   max=1e3,
-                                                   step = 10)),
+                                      sliderInput(inputId = paste0("nyrsCAPS",i),
+                                                  label = "Spline Stiffness",
+                                                  value = floor(length(na.omit(rwlRV$theRWL[,i]))/2),
+                                                  min = 10,
+                                                  max=(length(na.omit(rwlRV$theRWL[,i])) + 10) %/% 10 * 10,
+                                                  step = 10,
+                                                  ticks = FALSE)),
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'AgeDepSpline'"),
-                                      numericInput(inputId = paste0("nyrsADS",i),
-                                                   label = "Initial Spline Stiffness",
-                                                   value = 50,
-                                                   min = 1,
-                                                   max=200,
-                                                   step = 1),
+                                      sliderInput(inputId = paste0("nyrsADS",i),
+                                                  label = "Initial Spline Stiffness",
+                                                  value = 50,
+                                                  min = 5,
+                                                  max=(length(na.omit(rwlRV$theRWL[,i])) + 10) %/% 10 * 10,
+                                                  step = 5,
+                                                  ticks = FALSE),
                                       checkboxInput(inputId = paste0("pos.slopeADS",i),
                                                     label = "Allow Positive Slope",
                                                     value = FALSE)),
@@ -298,9 +302,9 @@ server <- function(input, output, session) {
                                                     value = FALSE)),
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Friedman'"),
-                                      numericInput(inputId = paste0("bass",i),
-                                                   label = "smoothness of the fitted curve (bass)",
-                                                   value = 0,min = 0,max=10,step = 1))
+                                      sliderInput(inputId = paste0("bass",i),
+                                                  label = "Curve smooth (bass)",
+                                                  value = 0, min = 0, max=10, step = 1))
               )), # end col
             fluidRow(
               hr(),
@@ -319,14 +323,32 @@ server <- function(input, output, session) {
     do.call(glide, allScreens)
   })
 
+
   ##############################################################
   #
   # Server logic for results
   #
   ##############################################################
 
-  output$summaryResults <- renderTable({
-    str(rwlRV$methodInfo)
-    rwlRV$theRWI
+  output$downloadRWI <- downloadHandler(
+    filename = function() {
+      if(is.null(input$file1)){
+        paste0("demo", "-",Sys.Date(), "RWI.csv")
+      }
+      else {
+        paste0(input$file1, "-",Sys.Date(), "RWI.csv")
+      }
+    },
+    content = function(file) {
+      rwiOut <- rwlRV$theRWI
+      rwiOut <- data.frame(Year = as.numeric(rownames(rwiOut)),rwiOut)
+      write.csv(rwiOut, file, row.names = FALSE)
+    }
+  )
+
+  output$tableRWI <- renderDataTable({
+    rwiOut <-  rwlRV$theRWI
+    datatable(rwiOut) %>%
+      formatRound(columns = 1:ncol(rwiOut), digits = 3)
   })
 }

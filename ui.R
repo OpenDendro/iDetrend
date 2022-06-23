@@ -6,6 +6,7 @@ library(tidyverse)
 library(shinyjs)
 library(gridExtra)
 library(shinyglide)
+library(DT)
 
 ui <- tagList(
   useShinyjs(),
@@ -37,7 +38,8 @@ ui <- tagList(
                                     ".raw",
                                     ".csv",
                                     ".txt")),
-               checkboxInput(inputId="useDemoDated", label="Use example data",
+               checkboxInput(inputId="useDemoDated",
+                             label="Use example data",
                              value=TRUE),
                hr(),
                plotOutput("rwlPlot",width = 750),
@@ -60,7 +62,23 @@ ui <- tagList(
 
     # 3rd tab results ----
     tabPanel(title="3. Results",value="ResultsTab",
-             tableOutput("summaryResults")
+             sidebarLayout(
+               sidebarPanel(
+                 h5("Save RWI Data"),
+                 downloadButton('downloadRWI', 'Download RWI'),
+                 helpText("The rwl file is writen as csv and readable
+                          by standard dendro programs.(e.g.,
+                          read.rwl() in dplR).")
+               ),
+               mainPanel(
+                 fluidPage(
+                   fluidRow(
+                     h3("Detrended data (RWI)"),
+                     dataTableOutput("tableRWI")
+                   )
+                 )
+               )
+             ) # end sidebarLayout
     ) # end tab 3
 
   ) # end the navbar
