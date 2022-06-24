@@ -1,6 +1,6 @@
 #list of packages required
 list.of.packages <- c("shiny","rmarkdown","markdown","dplR",
-                      "tidyverse","shinyjs","gridExtra","shinyglide","DT")
+                      "tidyverse","shinyjs","gridExtra","shinyglide","DT","plotly")
 #checking missing packages from list
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
