@@ -50,7 +50,7 @@ ui <- tagList(
                                     ".txt")),
                checkboxInput(inputId="useDemoDated",
                              label="Use example data",
-                             value=TRUE),
+                             value=FALSE),
                hr(),
                includeMarkdown("text_describe.rmd"),
                hr(),
