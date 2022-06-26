@@ -80,19 +80,19 @@ ui <- tagList(
                ),
                hr(),
                fluidRow(
-                 #column(6,
+                 column(6,
                         h5("Save RWI Data"),
                         downloadButton('downloadRWI', 'Download RWI'),
                         helpText("The rwl file is writen as csv and readable
                           by standard dendro programs.(e.g.,
                           read.rwl() in dplR).")
-                 #),
-                 #column(6,
-                #        h5("Generate Report"),
-                #        downloadButton("detrendReport", "Generate report"),
-                #        helpText("The report is self contained and will
-                #          allow reproducibility from the R prompt.")
-                # )
+                 ),
+                 column(6,
+                       h5("Generate Report"),
+                       downloadButton("detrendReport", "Generate report"),
+                       helpText("The report is self contained and will
+                         allow reproducibility from the R prompt.")
+                )
                ),
                hr(),
                fluidRow(

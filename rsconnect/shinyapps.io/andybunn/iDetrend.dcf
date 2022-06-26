@@ -5,10 +5,10 @@ account: andybunn
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 6540810
-bundleId: 6037650
+bundleId: 6041773
 url: https://andybunn.shinyapps.io/iDetrend/
-when: 1656020870.32489
-lastSyncTime: 1656020870.3249
+when: 1656133431.74837
+lastSyncTime: 1656133431.74845
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: LICENSE|README.md|TODO

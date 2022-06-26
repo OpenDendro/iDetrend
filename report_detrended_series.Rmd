@@ -1,5 +1,5 @@
 ---
-title: "Report: How a series was detrended"
+title: "Report: Individual Series Dentrening Output from iDetrend"
 output: html_document
 params:
   fileName: NA
@@ -8,14 +8,13 @@ params:
 ---
 
 ```{r,echo=TRUE, message=FALSE} 
-library(tidyverse)
 library(dplR)
-library(gridExtra)
 ```
 
 ```{r,echo=FALSE, message=FALSE}
 rwlObject <- params$rwlObject
 indivSeriesParam <- params$indivSeriesParam
+indivSeriesParam
 ```
 
 
@@ -30,119 +29,51 @@ if(!is.null(params$fileName)){
 
 ```
 
-### Date: `r Sys.Date()`
+### Date: 
+`r Sys.Date()`
 
-### File: `r fname`
+### File: 
+`r fname`
 
 ### R Code
+Code for reproducing the detrending performed in `iDetrend`.
+
+```{r make call, echo=FALSE}
+dat <- rwlObject
+nSeries <- ncol(dat)
+seriesNames <- names(dat)
+theCall <- rep(NA,nSeries)
+for(i in 1:nSeries){
+theCall[i] <- paste0("rwi",seriesNames[i]," <- detrend.series(y = dat[,'",
+                      seriesNames[i],"'],",
+                      "make.plot = FALSE,",
+                      "method = '",indivSeriesParam$method[i], "',",
+                      "nyrs = ", indivSeriesParam$nyrs[i], ",",
+                      "pos.slope = ", indivSeriesParam$pos.slope[i], ",",
+                      "bass = ", indivSeriesParam$bass[i], ",",
+                      "difference = ", indivSeriesParam$difference[i], ")\n")
+
+
+}
+theCall <- paste0(theCall,collapse = "\n")
+
+
+outRWICall <- paste0("datRWI <- cbind(",paste0("rwi",seriesNames,collapse = ","),")")
+
+
+```
 
 ```
 library(dplR)
 dat <- read.rwl("`r fname`")
+`r theCall`
 
+`r outRWICall`
+
+datRWI <- as.data.frame(datRWI)
+rownames(datRWI) <- time(dat)
+# As as an example, you could use `datRWI` to build a simple chronology.
+datCrn <- chron(datRWI)
 ```
 
-
-```{r,eval=FALSE,echo=FALSE}
-dat <- rwlObject
-nSeries <- ncol(dat)
-
-for(i in 1:nSeries){
-  mask <- is.na(dat[,i])
-  seriesDF <- data.frame(y=dat[,i]) %>%
-    drop_na() %>%
-    mutate(x=1:length(y))
-  
-  res <- detrend.series(y = seriesDF$y,
-                        method = indivSeriesParam$method[i],
-                        nyrs = indivSeriesParam$nyrs2[i],
-                        pos.slope = as.logical(indivSeriesParam$pos.slope[i]),
-                        bass = indivSeriesParam$bass[i],
-                        make.plot = FALSE,
-                        verbose = FALSE,
-                        return.info = TRUE,
-                        difference = as.logical(indivSeriesParam$difference[i]))
-  seriesDF$Curve <- res$curve
-  seriesDF$Fits <- res$series
-  
-  pSeries <- ggplot(seriesDF) +
-    geom_line(aes(x=x,y=y)) +
-    scale_x_continuous(name = "Index",position = "top",expand=c(0,0)) +
-    labs(y="Raw",title=paste0("Series: ",names(dat)[i]))
-  
-  if(indivSeriesParam$method[i] != "Ar"){
-    pSeries <- pSeries + geom_line(aes(x=x,y=Curve),color="darkred",size=1)
-  }
-  
-  pFits <- ggplot(seriesDF) +
-    geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits,na.rm=TRUE))),
-               linetype="dashed") +
-    geom_line(aes(x=x,y=Fits)) +
-    scale_x_continuous(name = "Index",expand=c(0,0)) +
-    labs(y="RWI")
-  
-  # make sure the axes are the same precision.
-  pSeries <- pSeries +
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-  
-  pFits <- pFits +
-    scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-  
-  pSeries <- pSeries + theme_minimal(base_size = 14) +
-    theme(plot.background = element_rect(color = "grey70",size=0.5))
-  pFits <- pFits + theme_minimal(base_size = 14) +
-    theme(plot.background = element_rect(color = "grey70",size=0.5))
-  
-  pCombined <- grid.arrange(pSeries,pFits)
-  pCombined
-}
-```
-
-```{r,eval=FALSE}
-
-res <- detrend.series(y = seriesDF$y,
-                      method = method2use,
-                      nyrs = nyrs2use,
-                      pos.slope = pos.slope2use,
-                      bass = bass2use,
-                      make.plot = FALSE,
-                      verbose = FALSE,
-                      return.info = TRUE,
-                      difference = difference2use)
-
-pSeries <- ggplot(seriesDF) +
-  geom_line(aes(x=x,y=y)) +
-  scale_x_continuous(name = "Index",position = "top",expand=c(0,0)) +
-  labs(y="Raw",title=paste0("Series: ",names(dat)[i]),
-       subtitle = subTxt)
-
-if(method2use != "Ar"){
-  pSeries <- pSeries + geom_line(aes(x=x,y=Curve),color="darkred",size=1)
-}
-
-pFits <- ggplot(seriesDF) +
-  geom_hline(yintercept = as.integer(round(mean(seriesDF$Fits,na.rm=TRUE))),
-             linetype="dashed") +
-  geom_line(aes(x=x,y=Fits)) +
-  scale_x_continuous(name = "Index",expand=c(0,0)) +
-  labs(y="RWI",caption = capTxt)
-
-# make sure the axes are the same precision.
-pSeries <- pSeries +
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-
-pFits <- pFits +
-  scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
-
-pSeries <- pSeries + theme_minimal(base_size = 14) +
-  theme(plot.background = element_rect(color = "grey70",size=0.5))
-pFits <- pFits + theme_minimal(base_size = 14) +
-  theme(plot.background = element_rect(color = "grey70",size=0.5))
-
-pCombined <- grid.arrange(pSeries,pFits)
-
-return(pCombined)
-
-
-```
-
+Note, not all the arguments are needed for the individual series calls, E.g., the `bass` argument only applies to series that use `Friedman` as the method. I will get around to making that output prettier some day.

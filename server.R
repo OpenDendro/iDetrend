@@ -18,7 +18,7 @@ server <- function(input, output, session) {
   rwlRV$methodInfo <- NULL      # methodInfo
   rwlRV$dirtyDogs <- NULL       # ddog flags
   rwlRV$detrendParams <- NULL   # params used in detrending
-
+  rwlRV$theCall <- NULL   # the string to pass to the report
 
 
   ##############################################################
@@ -357,6 +357,8 @@ server <- function(input, output, session) {
       rwlObject <- rwlRV$theRWL
       params <- list(fileName = input$file1$name, rwlObject=rwlRV$theRWL,
                      indivSeriesParam=rwlRV$detrendParams)
+
+
 
       # Knit the document, passing in the `params` list, and eval it in a
       # child of the global environment (this isolates the code in the document
