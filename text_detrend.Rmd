@@ -1,0 +1,22 @@
+#### Tool Tips
+#### Age-Dependent Spline (AgeDepSpline)
+The user can adjust the initial stiffness of the spline as well as the option to allow for a positive slope at the end of the series.If the fitted values are not positive then method "Mean" is used.
+
+##### AR
+No user options. Note the series length will shorten depending on the order of `ar`.
+
+#### Friedman
+The user can adjust the stiffness of the curve with the `bass` argument. If the fitted values are not positive then method "Mean" is used.
+
+##### Mean
+No user options.
+
+##### Modified Hugershoff (ModHugershoff)
+The "ModHugershoff" the user has no options unless the `nls` fit fails and a linear model is used as a fallback. In this case, the user opt for a positive slope. If the fitted values are not positive then method "Mean" is used.
+
+##### Modified Negative Exponential (ModNegExp)
+With "ModNegExp" the user has no options unless the `nls` fit fails and a linear model is used as a fallback. In this case, the user can opt for a positive slope. If the fitted values are not positive then method "Mean" is used.
+
+##### Spline
+The user can adjust the stiffness of the curve. The default value is 1/2 the series length. If the fitted values are not positive then method "Mean" is used.
+

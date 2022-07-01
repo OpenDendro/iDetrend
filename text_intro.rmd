@@ -1,10 +1,9 @@
+## Introduction
 Welcome to the beta version of **iDetrend** -- a Shiny app for interactively detrending tree-ring data. 
 
-Standard descriptive statistics and plots are produced when data are uploaded or the example data box is checked.
+Typically, in `dplR`, or other programs, users tend to apply the same detrending method to every series in a study. So you will see things in papers like, "We standardized the individual series using a cubic smoothing spline with a stiffness of 1/2 of the series length" or something like that. However, in many cases, automating detrending and not evaluating each series individually is folly. But interactive detrending can be frustrating -- the user makes choices that are cumbersome to document and hard to reproduce. This app tries to make interactive detrending easier to and easier to reproduce.
 
-On the second tab, you can cycle through each series and detrend it interactively. Note: Not all of the options in `detrend.series` are available.
-
-The third tab contains the detrended data which can be downloaded as a text file.
+*Remember! Detrending is a dark art. There is never a perfect solution. Frustration over detrending is the number one cause of dendros going to live as hermits in the tallgrass prairie where there are no trees to worry about.*
 
 [This project is on GitHub](https://github.com/OpenDendro/iDetrend/) as is [dplR](https://github.com/AndyBunn/dplR/). 
 
@@ -14,7 +13,41 @@ Please cite *dplR* if you use this app in any published work:
 _Dendrochronologia_, *26*(2), 115-124. ISSN 1125-7865, doi:
 10.1016/j.dendro.2008.01.002 (URL: http://doi.org/10.1016/j.dendro.2008.01.002).
 
-This app in still in development. Suggestions are welcome!
+### What this App Does
+This app will help you detrend and standardize a collection of tree-ring series. This is essentially a way to step through the `dplR` function [`detrend.series`](https://rdrr.io/cran/dplR/man/detrend.series.html).
 
-*Remember! Detrending is a dark art. There is never a perfect solution.*
+There are currently seven methods available for detrending although more are certainly possible.
+
+### Detrending Methods
+
+#### Age-Dependent Spline
+The "AgeDepSpline" approach uses an age-dependent spline via the function [`ads`](https://rdrr.io/cran/dplR/man/ads.html). If some of the fitted values are not positive then method "Mean" is used.
+
+#### Autoregressive Modelling (AR)
+The "Ar" approach is also known as "prewhitening" where the detrended series is the residuals of an `ar` model divided by the mean of those residuals to yield a series with white noise and a mean of one. This method removes all but the high frequency variation in the series and should only be used as such.
+
+#### Friedman
+The "Friedman" approach uses Friedman's 'super smoother' as implemented in [`supsmu`](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/supsmu) and adjust the stiffness of the curve with the `bass` arguemnt. In the command-line version the user can adjust additional parameters (`wt`, `span`). If some of the fitted values are not positive then method "Mean" is used.
+
+#### Mean
+The "Mean" approach fits a horizontal line using the mean of the series. This method is also the fallback solution in cases where the "Spline" or the linear fit (also a fallback solution itself) contains zeros or negative values, which would lead to invalid ring-width indices with residuals calculated with division.
+
+
+#### Modified Hugershoff (ModHugershoff)
+The "ModHugershoff" approach attempts to fit a Hugershoff model of biological growth of the form $f(t) = a t^b e^{-g t} + d$, where the argument of the function is time, using `nls`. See Fritts (2001) for details about the parameters. Unlike the command line version of `detrend.series` there is not options to constrain the parameters of the  negative exponential function. 
+
+If a suitable nonlinear model cannot be fit (function is non-decreasing or some values are not positive) then a linear model is fit. If the linear model has a positive slope method "Mean" is used unless the user indicates other wise.
+
+#### Modified Negative Exponential (ModNegExp)
+Ah the classic method! The "ModNegExp" approach attempts to fit a classic nonlinear model of biological growth of the form $f(t) = a e^{bt} + k$, where the argument of the function is time, using [`nls`](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/nls). See Fritts (2001) for details about the parameters. Unlike the command line version of `detrend.series` there is not options to constrain the parameters of the  negative exponential function. 
+
+If a suitable nonlinear model cannot be fit (function is non-decreasing or some values are not positive) then a linear model is fit. If the linear model has a positive slope method "Mean" is used unless the user indicates other wise.
+
+#### Spline
+The "Spline" approach uses a spline ([`caps`](https://rdrr.io/cran/dplR/man/caps.html)) where the frequency response is 0.50 at a wavelength of stiffness given in years. Note that if the fitted values are not positive then method "Mean" is used.
+
+### Residuals
+The standardization is done by dividing or subtracting each series by the growth trend to produce units in the dimensionless ring-width index (RWI). 
+
+
 

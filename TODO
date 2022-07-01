@@ -1,3 +1,5 @@
-Save R script and report for repro
+powt? If so change the resid method to be something like, div, diff, diff with powt? It's awkward since the powt func works only on a df.
 
-Add difference flag to output
+help text for methods
+
+Improve rwi table

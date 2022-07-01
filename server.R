@@ -13,6 +13,7 @@ server <- function(input, output, session) {
   # practices
 
   rwlRV$theRWL <- NULL          # the rwl object
+  rwlRV$theRWL <- NULL          # the rwl object
   rwlRV$nSeries <- NULL         # the number of series
   rwlRV$theRWI <- NULL          # the stored RWI
   rwlRV$methodInfo <- NULL      # methodInfo
@@ -20,7 +21,29 @@ server <- function(input, output, session) {
   rwlRV$detrendParams <- NULL   # params used in detrending
   rwlRV$theCall <- NULL   # the string to pass to the report
 
+  ##############################################################
+  #
+  # Observations
+  #
+  ##############################################################
 
+
+  # When app is initiated, hide all the tabs but the first one.
+  # This creates an observer so that they can be toggled when triggered
+  # by an event
+  observe({
+    hide(selector = "#navbar li a[data-value=DescribeTab]")
+    hide(selector = "#navbar li a[data-value=DetrendTab]")
+    hide(selector = "#navbar li a[data-value=ResultsTab]")
+  }, label = "tab hider")
+
+  # When the dated RWL file is read in show all the tabs
+  observeEvent({getRWL()},
+               {
+                 toggle(selector = "#navbar li a[data-value=DescribeTab]")
+                 toggle(selector = "#navbar li a[data-value=DetrendTab]")
+                 toggle(selector = "#navbar li a[data-value=ResultsTab]")
+               }, label = "tab shower")
   ##############################################################
   #
   # Reactives
@@ -48,7 +71,7 @@ server <- function(input, output, session) {
     }
 
   })
-  # not 100 needed but let's dimension the RVs
+  # not 100% needed but let's dimension the RVs
   dimRVs <- reactive({
     dat <- getRWL()
     # the number of series -- vector
@@ -128,6 +151,7 @@ server <- function(input, output, session) {
         bass2use = NA
         difference2use <- ifelse(input[[paste0("differenceText",i)]] == "Difference",TRUE,FALSE)
 
+
         # update args for each method
         if(method2use == "AgeDepSpline"){
           nyrs2use <- input[[paste0("nyrsADS",i)]]
@@ -183,10 +207,6 @@ server <- function(input, output, session) {
         #})
 
         # get messages to add to the plot. This is vexing.
-        # Things the user wants to know. Does the detrend method differ
-        # from what they selected? And what are the consequences? How much can
-        # you explain in helptext and what should be front and center?
-        # I think final fit method needs to be on there and any data
         if(res$dirtyDog){
           capTxt <- "ARSTAN would tell you this is a dirty dog"
 
@@ -247,6 +267,7 @@ server <- function(input, output, session) {
 
     ### Set up the screens
     allScreens <- c(
+
       lapply(1:nSeries, function(i) {
         screen(
           fluidPage(
@@ -257,6 +278,12 @@ server <- function(input, output, session) {
                                  label = "Residual Method",
                                  choices = c("Division","Difference"),
                                  selected = "Ratio")),
+              # add a tooltip
+              bsTooltip(paste0("differenceText",i),
+                        title = "Choose between standardizing by subtraction (difference) or by ratio (division)",
+                        placement =  "right",
+                        trigger = "hover",
+                        options = list(container = "body")),
               column(4,
                      selectInput(inputId = paste0("detrendMethod",i),
                                  label = "Detrend Method",
@@ -268,10 +295,8 @@ server <- function(input, output, session) {
                                              "Spline"))),
 
               column(4,
-
                      # conditional arguments for specific methods
-
-                     # note gymnastics to get pretty niumbers on sliders :/
+                     # note gymnastics to get pretty numbers on sliders :/
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Spline'"),
                                       sliderInput(inputId = paste0("nyrsCAPS",i),
                                                   label = "Spline Stiffness",
@@ -279,35 +304,81 @@ server <- function(input, output, session) {
                                                   min = 10,
                                                   max=(length(na.omit(rwlRV$theRWL[,i])) + 10) %/% 10 * 10,
                                                   step = 10,
-                                                  ticks = FALSE)),
+                                                  ticks = FALSE),
+                                      # add a tooltip
+                                      bsTooltip(paste0("nyrsCAPS",i),
+                                                title = "Spline stiffness in years, defaults to 1/2 the series length",
+                                                placement =  "left",
+                                                trigger = "hover",
+                                                options = list(container = "body")),
+                     ), # end cond panel
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'AgeDepSpline'"),
                                       sliderInput(inputId = paste0("nyrsADS",i),
-                                                  label = "Initial Spline Stiffness",
+                                                  label = "Spline Stiffness",
                                                   value = 50,
                                                   min = 5,
                                                   max=(length(na.omit(rwlRV$theRWL[,i])) + 10) %/% 10 * 10,
                                                   step = 5,
                                                   ticks = FALSE),
+                                      # add a tooltip
+                                      bsTooltip(paste0("nyrsADS",i),
+                                                title = "Initial spline stiffness in years",
+                                                placement =  "left",
+                                                trigger = "hover",
+                                                options = list(container = "body")),
+
                                       checkboxInput(inputId = paste0("pos.slopeADS",i),
                                                     label = "Allow Positive Slope",
-                                                    value = FALSE)),
+                                                    value = FALSE),
+                                      # add a tooltip
+                                      bsTooltip(paste0("pos.slopeADS",i),
+                                                title = "Allow for a positive slope in case of linear model fit",
+                                                placement =  "left",
+                                                trigger = "hover",
+                                                options = list(container = "body")),
+
+                     ), # end cond panel
 
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModNegExp'"),
                                       checkboxInput(inputId = paste0("pos.slopeModNegExp",i),
                                                     label = "Allow Positive Slope",
-                                                    value = FALSE)),
+                                                    value = FALSE),
+                                      # add a tooltip
+                                      bsTooltip(paste0("pos.slopeModNegExp",i),
+                                                title = "Allow for a positive slope in case of linear model fit",
+                                                placement =  "left",
+                                                trigger = "hover",
+                                                options = list(container = "body")),
+
+                     ), # end cond panel
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModHugershoff'"),
                                       checkboxInput(inputId = paste0("pos.slopeModHugershoff",i),
                                                     label = "Allow Positive Slope",
-                                                    value = FALSE)),
+                                                    value = FALSE),
+                                      # add a tooltip
+                                      bsTooltip(paste0("pos.slopeModHugershoff",i),
+                                                title = "Allow for a positive slope in case of linear model fit",
+                                                placement =  "left",
+                                                trigger = "hover",
+                                                options = list(container = "body")),
+
+                     ), # end cond panel
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Friedman'"),
                                       sliderInput(inputId = paste0("bass",i),
-                                                  label = "Curve smooth (bass)",
-                                                  value = 0, min = 0, max=10, step = 1))
+                                                  label = "Curve smooth",
+                                                  value = 0, min = 0, max=10, step = 1),
+                                      # add a tooltip
+                                      bsTooltip(paste0("bass",i),
+                                                title = "Smoothness of bass function",
+                                                placement =  "left",
+                                                trigger = "hover",
+                                                options = list(container = "body")),
+
+                     ) # end cond panel
               )), # end col
             fluidRow(
               hr(),
@@ -319,7 +390,12 @@ server <- function(input, output, session) {
             )
           )
         )
-      })
+      }),
+      list(
+        screen(
+          p("Click Finish to see results and download data.")
+        )
+      )
     )
     do.call(glide, allScreens)
   })
@@ -347,6 +423,28 @@ server <- function(input, output, session) {
     }
   )
 
+
+  output$detrendPlots <- downloadHandler(
+    filename = "detrend_plots.html",
+    content = function(file) {
+
+      tempReport <- file.path(tempdir(), "report_savePlots.Rmd")
+      file.copy("report_savePlots.Rmd", tempReport, overwrite = TRUE)
+
+      rwlObject <- rwlRV$theRWL
+      params <- list(fileName = input$file1$name, rwlObject=rwlRV$theRWL,
+                     indivSeriesParam=rwlRV$detrendParams)
+
+      # Knit the document, passing in the `params` list, and eval it in a
+      # child of the global environment (this isolates the code in the document
+      # from the code in this app). Defensive
+      rmarkdown::render(tempReport, output_file = file,
+                        params = params,
+                        envir = new.env(parent = globalenv())
+      )
+    }
+  )
+
   output$detrendReport <- downloadHandler(
     filename = "detrend_report.html",
     content = function(file) {
@@ -357,8 +455,6 @@ server <- function(input, output, session) {
       rwlObject <- rwlRV$theRWL
       params <- list(fileName = input$file1$name, rwlObject=rwlRV$theRWL,
                      indivSeriesParam=rwlRV$detrendParams)
-
-
 
       # Knit the document, passing in the `params` list, and eval it in a
       # child of the global environment (this isolates the code in the document
