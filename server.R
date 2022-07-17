@@ -486,7 +486,13 @@ server <- function(input, output, session) {
 
   output$tableRWI <- renderDataTable({
     rwiOut <-  rwlRV$theRWI
-    datatable(rwiOut) %>%
+    datatable(rwiOut,
+              autoHideNavigation=TRUE,
+              options = list(pageLength = min(50,nrow(rwiOut)),
+                             searching=FALSE,
+                             lengthChange=FALSE)) %>%
+
       formatRound(columns = 1:ncol(rwiOut), digits = 3)
+
   })
 }
