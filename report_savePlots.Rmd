@@ -34,7 +34,7 @@ if(!is.null(params$fileName)){
 
 ### Series Plots
 
-```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE}
+```{r,eval=TRUE,echo=FALSE,message=FALSE,warning=FALSE,fig.width = 10, fig.height = 5}
 dat <- rwlObject
 nSeries <- ncol(dat)
 for(i in 1:nSeries){
