@@ -44,16 +44,17 @@ nSeries <- ncol(dat)
 seriesNames <- names(dat)
 theCall <- rep(NA,nSeries)
 for(i in 1:nSeries){
-theCall[i] <- paste0("rwi",seriesNames[i]," <- detrend.series(y = dat[,'",
-                      seriesNames[i],"'],",
-                      "make.plot = FALSE,",
-                      "method = '",indivSeriesParam$method[i], "',",
-                      "nyrs = ", indivSeriesParam$nyrs[i], ",",
-                      "pos.slope = ", indivSeriesParam$pos.slope[i], ",",
-                      "bass = ", indivSeriesParam$bass[i], ",",
-                      "difference = ", indivSeriesParam$difference[i], ")\n")
-
-
+  theCall[i] <- paste0("rwi",seriesNames[i]," <- detrend.series(y = dat[,'",
+                       seriesNames[i],"'],",
+                       "make.plot = FALSE,",
+                       "method = '",indivSeriesParam$method[i], "',",
+                       "nyrs = ", indivSeriesParam$nyrs[i], ",",
+                       "pos.slope = ", indivSeriesParam$pos.slope[i], ",",
+                       "bass = ", indivSeriesParam$bass[i], ",",
+                       "span = ", indivSeriesParam$span[i], ",",
+                       "difference = ", indivSeriesParam$difference[i], ")\n")
+  
+  
 }
 theCall <- paste0(theCall,collapse = "\n")
 

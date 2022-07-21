@@ -1,3 +1,8 @@
-powt? If so change the resid method to be something like, div, diff, diff with powt? It's awkward since the powt func works only on a df.
+powt? see the function in the powt.series.R file. This allows for power transformation of indiv series. However, to get it deployed you'll need this function in the CRAN release of dplR.
 
-help text for methods
+help text for powt
+
+see if you can get a title above checkboxes for formatting purposes. ugly as is.
+
+
+ooof. users should be allowed negative fits if diff is used in all cases, right? that's a serious change.

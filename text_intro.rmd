@@ -1,7 +1,7 @@
 ## Introduction
 Welcome to the beta version of **iDetrend** -- a Shiny app for interactively detrending tree-ring data. 
 
-Typically, in `dplR`, or other programs, users tend to apply the same detrending method to every series in a study. So you will see things in papers like, "We standardized the individual series using a cubic smoothing spline with a stiffness of 1/2 of the series length" or something like that. However, in many cases, automating detrending and not evaluating each series individually is folly. But interactive detrending can be frustrating -- the user makes choices that are cumbersome to document and hard to reproduce. This app tries to make interactive detrending easier to and easier to reproduce.
+Typically, in `dplR`, or other programs, users tend to apply the same detrending method to every series in a study. So you will see things in papers like, "We standardized the individual series using a cubic smoothing spline with a stiffness of 1/2 of the series length" or something like that. However, in many cases, automating detrending and not evaluating each series individually is folly. But interactive detrending can be frustrating -- the user makes choices that are cumbersome to document and hard to reproduce. This app tries to make interactive detrending easier to and easier to reproduce by providing some of the curve-based detrending methods that are commonly used in `dplR` and aided by visualization of individual series. This app doesn't do regional-curve ([rcs](https://rdrr.io/cran/dplR/man/rcs.html)), signal-free ([ssf]((https://rdrr.io/cran/dplR/man/ssf.html)), or C-method ([cms](https://rdrr.io/cran/dplR/man/cms.html)) standardization.
 
 *Remember! Detrending is a dark art. There is never a perfect solution. Frustration over detrending is the number one cause of dendros going to live as hermits in the tallgrass prairie where there are no trees to worry about.*
 
@@ -21,13 +21,13 @@ There are currently seven methods available for detrending although more are cer
 ### Detrending Methods
 
 #### Age-Dependent Spline
-The "AgeDepSpline" approach uses an age-dependent spline via the function [`ads`](https://rdrr.io/cran/dplR/man/ads.html). If some of the fitted values are not positive then method "Mean" is used.
+The "AgeDepSpline" approach uses an age-dependent spline via the function [`ads`](https://rdrr.io/cran/dplR/man/ads.html). If some of the fitted values are not positive then method "Mean" is used. The user also has the option to allow a positive slope in the curve.
 
 #### Autoregressive Modelling (AR)
-The "Ar" approach is also known as "prewhitening" where the detrended series is the residuals of an `ar` model divided by the mean of those residuals to yield a series with white noise and a mean of one. This method removes all but the high frequency variation in the series and should only be used as such.
+The "Ar" approach is also known as "prewhitening" where the detrended series is the residuals of an `ar` model divided by the mean of those residuals to yield a series with white noise and a mean of one. This method removes all but the high frequency variation in the series and should only be used as such. It's not curve-based method per se but often lumped in with those methods.
 
 #### Friedman
-The "Friedman" approach uses Friedman's 'super smoother' as implemented in [`supsmu`](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/supsmu) and adjust the stiffness of the curve with the `bass` arguemnt. In the command-line version the user can adjust additional parameters (`wt`, `span`). If some of the fitted values are not positive then method "Mean" is used.
+The "Friedman" approach uses Friedman's 'super smoother' as implemented in [`supsmu`](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/supsmu) and adjust the stiffness of the curve with the `span` or `bass` argument. If some of the fitted values are not positive then method "Mean" is used. Note that in the command-line version the user can adjust additional individual weights by year (`wt`). 
 
 #### Mean
 The "Mean" approach fits a horizontal line using the mean of the series. This method is also the fallback solution in cases where the "Spline" or the linear fit (also a fallback solution itself) contains zeros or negative values, which would lead to invalid ring-width indices with residuals calculated with division.

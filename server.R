@@ -88,6 +88,7 @@ server <- function(input, output, session) {
                                       nyrs = rep(NA,ncol(dat)),
                                       pos.slope =rep(NA,ncol(dat)),
                                       bass = rep(NA,ncol(dat)),
+                                      span = rep(NA,ncol(dat)),
                                       difference=rep(NA,ncol(dat)))
   })
   ##############################################################
@@ -149,6 +150,7 @@ server <- function(input, output, session) {
         nyrs2use = NA
         pos.slope2use = FALSE
         bass2use = NA
+        span2use = NA
         difference2use <- ifelse(input[[paste0("differenceText",i)]] == "Difference",TRUE,FALSE)
 
 
@@ -172,6 +174,7 @@ server <- function(input, output, session) {
 
         if(method2use == "Friedman"){
           bass2use <- input[[paste0("bass",i)]]
+          span2use <- input[[paste0("span",i)]]
         }
 
         res <- detrend.series(y = seriesDF$y,
@@ -179,6 +182,7 @@ server <- function(input, output, session) {
                               nyrs = nyrs2use,
                               pos.slope = pos.slope2use,
                               bass = bass2use,
+                              span = span2use,
                               make.plot = FALSE,
                               verbose = FALSE,
                               return.info = TRUE,
@@ -202,6 +206,7 @@ server <- function(input, output, session) {
                                        nyrs2use,
                                        pos.slope2use,
                                        bass2use,
+                                       span2use,
                                        difference = difference2use)
         })
         #})
@@ -267,13 +272,12 @@ server <- function(input, output, session) {
 
     ### Set up the screens
     allScreens <- c(
-
       lapply(1:nSeries, function(i) {
         screen(
           fluidPage(
             ### menus
             fluidRow(
-              column(4,
+              column(3,
                      selectInput(inputId = paste0("differenceText",i),
                                  label = "Residual Method",
                                  choices = c("Division","Difference"),
@@ -284,7 +288,7 @@ server <- function(input, output, session) {
                         placement =  "right",
                         trigger = "hover",
                         options = list(container = "body")),
-              column(4,
+              column(3,
                      selectInput(inputId = paste0("detrendMethod",i),
                                  label = "Detrend Method",
                                  choices = c("AgeDepSpline",
@@ -294,7 +298,7 @@ server <- function(input, output, session) {
                                              "ModNegExp",
                                              "Spline"))),
 
-              column(4,
+              column(6,
                      # conditional arguments for specific methods
                      # note gymnastics to get pretty numbers on sliders :/
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Spline'"),
@@ -314,29 +318,34 @@ server <- function(input, output, session) {
                      ), # end cond panel
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'AgeDepSpline'"),
-                                      sliderInput(inputId = paste0("nyrsADS",i),
-                                                  label = "Spline Stiffness",
-                                                  value = 50,
-                                                  min = 5,
-                                                  max=(length(na.omit(rwlRV$theRWL[,i])) + 10) %/% 10 * 10,
-                                                  step = 5,
-                                                  ticks = FALSE),
-                                      # add a tooltip
-                                      bsTooltip(paste0("nyrsADS",i),
-                                                title = "Initial spline stiffness in years",
-                                                placement =  "left",
-                                                trigger = "hover",
-                                                options = list(container = "body")),
-
-                                      checkboxInput(inputId = paste0("pos.slopeADS",i),
-                                                    label = "Allow Positive Slope",
-                                                    value = FALSE),
-                                      # add a tooltip
-                                      bsTooltip(paste0("pos.slopeADS",i),
-                                                title = "Allow for a positive slope in case of linear model fit",
-                                                placement =  "left",
-                                                trigger = "hover",
-                                                options = list(container = "body")),
+                                      fluidRow(
+                                        column(6,
+                                               sliderInput(inputId = paste0("nyrsADS",i),
+                                                           label = "Spline Stiffness",
+                                                           value = 50,
+                                                           min = 5,
+                                                           max=(length(na.omit(rwlRV$theRWL[,i])) + 10) %/% 10 * 10,
+                                                           step = 5,
+                                                           ticks = FALSE),
+                                               # add a tooltip
+                                               bsTooltip(paste0("nyrsADS",i),
+                                                         title = "Initial spline stiffness in years",
+                                                         placement =  "left",
+                                                         trigger = "hover",
+                                                         options = list(container = "body"))
+                                        ),
+                                        column(6,
+                                               checkboxInput(inputId = paste0("pos.slopeADS",i),
+                                                             label = "Allow Positive Slope",
+                                                             value = FALSE),
+                                               # add a tooltip
+                                               bsTooltip(paste0("pos.slopeADS",i),
+                                                         title = "Allow for a positive slope in case of linear model fit",
+                                                         placement =  "left",
+                                                         trigger = "hover",
+                                                         options = list(container = "body"))
+                                        )
+                                      ),
 
                      ), # end cond panel
 
@@ -368,15 +377,33 @@ server <- function(input, output, session) {
                      ), # end cond panel
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Friedman'"),
-                                      sliderInput(inputId = paste0("bass",i),
-                                                  label = "Curve smooth",
-                                                  value = 0, min = 0, max=10, step = 1),
-                                      # add a tooltip
-                                      bsTooltip(paste0("bass",i),
-                                                title = "Smoothness of bass function",
-                                                placement =  "left",
-                                                trigger = "hover",
-                                                options = list(container = "body")),
+
+                                      fluidRow(
+                                        column(6,
+                                               # span
+                                               sliderInput(inputId = paste0("span",i),
+                                                           label = "Span",
+                                                           value = 0, min = 0, max=1, step = 0.1),
+                                               # add a tooltip
+                                               bsTooltip(paste0("span",i),
+                                                         title = "The fraction of the observations in the span of the smoother, If left at the default (0), the span will be determinied by cross-validation. Generally, either span or bass is adjusted but not both.",
+                                                         placement =  "left",
+                                                         trigger = "hover",
+                                                         options = list(container = "body"))
+                                        ),
+                                        column(6,
+                                               # bass
+                                               sliderInput(inputId = paste0("bass",i),
+                                                           label = "Bass",
+                                                           value = 0, min = 0, max=10, step = 1),
+                                               # add a tooltip
+                                               bsTooltip(paste0("bass",i),
+                                                         title = "Smoothness of bass function, Values of up to 10 indicate increasing smoothness. Generally, either span or bass is adjusted but not both.",
+                                                         placement =  "left",
+                                                         trigger = "hover",
+                                                         options = list(container = "body"))
+                                        )
+                                      ),
 
                      ) # end cond panel
               )), # end col
@@ -390,12 +417,7 @@ server <- function(input, output, session) {
             )
           )
         )
-      }),
-      list(
-        screen(
-          p("Click Finish to see results and download data.")
-        )
-      )
+      })
     )
     do.call(glide, allScreens)
   })

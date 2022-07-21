@@ -49,6 +49,7 @@ for(i in 1:nSeries){
                         nyrs = indivSeriesParam$nyrs2[i],
                         pos.slope = as.logical(indivSeriesParam$pos.slope[i]),
                         bass = indivSeriesParam$bass[i],
+                        span = indivSeriesParam$span[i],
                         make.plot = FALSE,
                         verbose = FALSE,
                         return.info = TRUE,
