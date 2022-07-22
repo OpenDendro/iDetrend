@@ -335,12 +335,13 @@ server <- function(input, output, session) {
                                                          options = list(container = "body"))
                                         ),
                                         column(6,
+                                               p(strong("Allow Positive Slope")),
                                                checkboxInput(inputId = paste0("pos.slopeADS",i),
-                                                             label = "Allow Positive Slope",
+                                                             label = NULL,
                                                              value = FALSE),
                                                # add a tooltip
                                                bsTooltip(paste0("pos.slopeADS",i),
-                                                         title = "Allow for a positive slope in case of linear model fit",
+                                                         title = "Allow for a positive slope at the end of the series",
                                                          placement =  "left",
                                                          trigger = "hover",
                                                          options = list(container = "body"))
@@ -351,8 +352,9 @@ server <- function(input, output, session) {
 
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModNegExp'"),
+                                      p(strong("Allow Positive Slope")),
                                       checkboxInput(inputId = paste0("pos.slopeModNegExp",i),
-                                                    label = "Allow Positive Slope",
+                                                    label = NULL,
                                                     value = FALSE),
                                       # add a tooltip
                                       bsTooltip(paste0("pos.slopeModNegExp",i),
@@ -364,8 +366,9 @@ server <- function(input, output, session) {
                      ), # end cond panel
 
                      conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModHugershoff'"),
+                                      p(strong("Allow Positive Slope")),
                                       checkboxInput(inputId = paste0("pos.slopeModHugershoff",i),
-                                                    label = "Allow Positive Slope",
+                                                    label = NULL,
                                                     value = FALSE),
                                       # add a tooltip
                                       bsTooltip(paste0("pos.slopeModHugershoff",i),
