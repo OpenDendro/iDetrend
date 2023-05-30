@@ -242,7 +242,7 @@ server <- function(input, output, session) {
                subtitle = subTxt)
 
         if(method2use != "Ar"){
-          pSeries <- pSeries + geom_line(aes(x=x,y=Curve),color="darkred",size=1)
+          pSeries <- pSeries + geom_line(aes(x=x,y=Curve),color="darkred",linewidth=1)
         }
 
         pFits <- ggplot(seriesDF) +
@@ -260,9 +260,9 @@ server <- function(input, output, session) {
           scale_y_continuous(labels = scales::number_format(accuracy = 0.01))
 
         pSeries <- pSeries + theme_minimal(base_size = 14) +
-          theme(plot.background = element_rect(color = "grey70",size=0.5))
+          theme(plot.background = element_rect(color = "grey70",linewidth=0.5))
         pFits <- pFits + theme_minimal(base_size = 14) +
-          theme(plot.background = element_rect(color = "grey70",size=0.5))
+          theme(plot.background = element_rect(color = "grey70",linewidth=0.5))
 
         pCombined <- grid.arrange(pSeries,pFits)
 

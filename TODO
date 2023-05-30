@@ -1,4 +1,4 @@
-powt? see the function in the powt.series.R file. This allows for power transformation of indiv series. However, to get it deployed you'll need this function in the CRAN release of dplR.
+powt? see the function in the powt.series.R file. This allows for power transformation of indiv series. However, to get it deployed you'll need this function in the CRAN release of dplR. THis will be in 2.0. Before for testing?
 
 help text for powt
 
