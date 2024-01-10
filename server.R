@@ -143,9 +143,18 @@ server <- function(input, output, session) {
         seriesDF <- data.frame(y=dat[,i]) %>%
           drop_na() %>%
           mutate(x=1:length(y))
-
         # set detrend args here.
-        method2use = input[[paste0("detrendMethod", i)]]
+        # Get the short version of the detrend method
+        method2use = switch(input[[paste0("detrendMethod", i)]],
+               "Age dependent spline" = "AgeDepSpline",
+               "Autoregressive model" = "Ar",
+               "Friedman super smoother" = "Friedman",
+               "Mean" = "Mean",
+               "Modified Hugershoff" = "ModHugershoff",
+               "Modified Negative Exponential" = "ModNegExp",
+               "Cubic spline" = "Spline")
+
+#        method2use = input[[paste0("detrendMethod", i)]]
         # init defaults
         nyrs2use = NA
         pos.slope2use = FALSE
@@ -153,6 +162,13 @@ server <- function(input, output, session) {
         span2use = NA
         difference2use <- ifelse(input[[paste0("differenceText",i)]] == "Difference",TRUE,FALSE)
 
+        # apply powt if requested
+        if(input[[paste0("powtText", i)]]=="Yes"){
+          seriesDF$y <- powt.series(seriesDF$y,rescale=FALSE)
+        }
+        if(input[[paste0("powtText", i)]]=="Yes with rescale"){
+          seriesDF$y <- powt.series(seriesDF$y,rescale=TRUE)
+        }
 
         # update args for each method
         if(method2use == "AgeDepSpline"){
@@ -277,7 +293,18 @@ server <- function(input, output, session) {
           fluidPage(
             ### menus
             fluidRow(
-              column(3,
+              column(2,
+                     selectInput(inputId = paste0("powtText",i),
+                                   label = "Power transform",
+                                 choices = c("No","Yes","Yes with rescale"),
+                                 selected = "No")),
+              # add a tooltip
+              bsTooltip(paste0("powtText",i),
+                        title = "Apply a power transformation to the series using the powt.series function",
+                        placement =  "right",
+                        trigger = "hover",
+                        options = list(container = "body")),
+              column(2,
                      selectInput(inputId = paste0("differenceText",i),
                                  label = "Residual Method",
                                  choices = c("Division","Difference"),
@@ -288,36 +315,37 @@ server <- function(input, output, session) {
                         placement =  "right",
                         trigger = "hover",
                         options = list(container = "body")),
-              column(3,
+              column(4,
                      selectInput(inputId = paste0("detrendMethod",i),
                                  label = "Detrend Method",
-                                 choices = c("AgeDepSpline",
-                                             "Ar", "Friedman",
+                                 choices = c("Age dependent spline",
+                                             "Autoregressive model",
+                                             "Friedman super smoother",
                                              "Mean",
-                                             "ModHugershoff",
-                                             "ModNegExp",
-                                             "Spline"))),
+                                             "Modified Hugershoff",
+                                             "Modified Negative Exponential",
+                                             "Cubic spline"))),
 
-              column(6,
+              column(4,
                      # conditional arguments for specific methods
                      # note gymnastics to get pretty numbers on sliders :/
-                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Spline'"),
+                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Cubic spline'"),
                                       sliderInput(inputId = paste0("nyrsCAPS",i),
                                                   label = "Spline Stiffness",
-                                                  value = floor(length(na.omit(rwlRV$theRWL[,i]))/2),
+                                                  value = floor(length(na.omit(rwlRV$theRWL[,i]))*2/3),
                                                   min = 10,
                                                   max=(length(na.omit(rwlRV$theRWL[,i])) + 10) %/% 10 * 10,
                                                   step = 10,
                                                   ticks = FALSE),
                                       # add a tooltip
                                       bsTooltip(paste0("nyrsCAPS",i),
-                                                title = "Spline stiffness in years, defaults to 1/2 the series length",
+                                                title = "Spline stiffness in years, defaults to 2/3 the series length",
                                                 placement =  "left",
                                                 trigger = "hover",
                                                 options = list(container = "body")),
                      ), # end cond panel
 
-                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'AgeDepSpline'"),
+                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Age dependent spline'"),
                                       fluidRow(
                                         column(6,
                                                sliderInput(inputId = paste0("nyrsADS",i),
@@ -351,7 +379,7 @@ server <- function(input, output, session) {
                      ), # end cond panel
 
 
-                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModNegExp'"),
+                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Modified Negative Exponential'"),
                                       p(strong("Allow Positive Slope")),
                                       checkboxInput(inputId = paste0("pos.slopeModNegExp",i),
                                                     label = NULL,
@@ -365,7 +393,7 @@ server <- function(input, output, session) {
 
                      ), # end cond panel
 
-                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'ModHugershoff'"),
+                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Modified Hugershoff'"),
                                       p(strong("Allow Positive Slope")),
                                       checkboxInput(inputId = paste0("pos.slopeModHugershoff",i),
                                                     label = NULL,
@@ -379,7 +407,7 @@ server <- function(input, output, session) {
 
                      ), # end cond panel
 
-                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Friedman'"),
+                     conditionalPanel(condition = paste0("input.detrendMethod",i," == 'Friedman super smoother'"),
 
                                       fluidRow(
                                         column(6,
@@ -409,7 +437,8 @@ server <- function(input, output, session) {
                                       ),
 
                      ) # end cond panel
-              )), # end col
+              ) # end col
+              ), # end row
             fluidRow(
               hr(),
               h5(paste0("Series ", i, " of ", nSeries))
@@ -457,7 +486,8 @@ server <- function(input, output, session) {
       file.copy("report_savePlots.Rmd", tempReport, overwrite = TRUE)
 
       rwlObject <- rwlRV$theRWL
-      params <- list(fileName = input$file1$name, rwlObject=rwlRV$theRWL,
+      params <- list(fileName = input$file1$name,
+                     rwlObject=rwlRV$theRWL,
                      indivSeriesParam=rwlRV$detrendParams)
 
       # Knit the document, passing in the `params` list, and eval it in a
