@@ -1,0 +1,191 @@
+---
+title: "Report: Detrending"
+output: html_document
+params:
+  fileName: NA
+  fileLabel: NA
+  example: NA
+  dat: NA
+  settings: NA
+  fits: NA
+  statuses: NA
+  notes: NA
+  fills: NA
+  goal: NA
+  dropped: NA
+  rwi: NA
+  rwiSummary: NA
+  baseSummary: NA
+  crn: NA
+  baseCrn: NA
+  crnOpts: NA
+  baseLabel: NA
+  basePinned: NA
+  code: NA
+  crnMessage: NA
+  ids: NA
+  running: NA
+  sss: NA
+  baseRunning: NA
+  plots: NA
+  version: NA
+  helpers: NA
+---
+
+```{r setup, echo=FALSE, message=FALSE}
+# One figure per series adds up (about 100 KB each as drawn on a Mac):
+# plain 96 dpi, not the doubled "retina" default, halves the report.
+knitr::opts_chunk$set(dpi = 96, fig.retina = 1)
+library(dplR)
+library(knitr)
+library(kableExtra)
+for (f in params$helpers) source(f)
+dat   <- params$dat
+S     <- params$settings
+fits  <- params$fits
+st    <- params$statuses
+rwi   <- params$rwi
+sm    <- params$rwiSummary
+base  <- params$baseSummary
+fname <- params$fileName
+years <- as.numeric(rownames(dat))
+notes <- params$notes[nzchar(unlist(params$notes))]
+warn  <- collectionWarnings(S, fits)
+co    <- params$crnOpts
+ids   <- idsFor(params$ids$ids, rwi)
+ks <- function(x) kable_styling(x, bootstrap_options = c("striped", "hover", "condensed"),
+                                full_width = FALSE, position = "left")
+```
+
+### Date: `r Sys.Date()`
+
+### File: `r params$fileLabel`
+
+Made with iDetrend `r params$version` using dplR `r packageVersion("dplR")`.
+Each series was detrended on its own, with the settings in the table below.
+The R code at the end rebuilds the indices.
+
+`r if (!is.null(params$goal)) paste0("**Starting point.** The chronology is for: ", tolower(substr(params$goal$label, 1, 1)), substring(params$goal$label, 2), ". Every series was started with: ", tolower(substr(params$goal$starts, 1, 1)), substring(params$goal$starts, 2), " Series were then looked at and changed one by one; the table shows what each ended with.")`
+
+`r if (length(params$dropped)) paste0("**Left out on loading**, having no measurements: ", paste(params$dropped, collapse = ", "), ".")`
+
+`r if (length(params$fills)) "### Gaps filled"`
+
+`r if (length(params$fills)) paste0("Years with no measurement inside a series were filled before detrending (", paste(vapply(params$fills, function(f) if (f == "0") "with zero" else paste("by", tolower(f)), ""), collapse = ", then "), "). The filled values are estimates, not measurements.")`
+
+`r if (length(warn)) "### Read this first"`
+
+```{r, echo=FALSE, results="asis"}
+if (length(warn)) cat(paste0("* ", warn, collapse = "\n"), "\n")
+```
+
+### The chronology
+
+`r chronLabel(co$type, co$biweight)`
+
+```{r, echo=FALSE, fig.width=10, fig.height=4.5}
+if (!is.null(params$crn)) {
+  plotChron(params$crn, params$baseCrn, labels = c("With your settings", params$baseLabel),
+            ylab = c(std = "Index", res = "Residual index", ars = "ARSTAN index",
+                     vsc = "Stabilised index")[[co$type]],
+            sss.from = sssFrom(params$sss))
+}
+```
+
+`r if (is.null(params$crn)) paste("There is no chronology.", params$crnMessage)`
+
+`r if (!is.null(params$crn)) c(std = "The mean of the indices each year, from chron(),", res = "The mean of the indices each year after each series was prewhitened (its autocorrelation removed), from chron(prewhiten = TRUE),", ars = "The ARSTAN chronology from chron.ars(): the residual chronology with the autocorrelation the series share put back,", vsc = paste0("The mean of the indices each year, rescaled so that its variance does not depend on the number of series, from chron.stabilized() with a window of ", co$win, " years,"))[[co$type]]` `r if (!is.null(params$crn)) "over the number of series (grey)."` `r if (!is.null(params$baseCrn)) { if (isTRUE(params$basePinned)) paste0("The orange line behind it is the same kind of chronology from the same data with an earlier set of settings: ", tolower(substr(params$baseLabel, 1, 1)), substring(params$baseLabel, 2), " in iDetrend. Those settings are not recorded in this report.") else "The orange line behind it is the same kind of chronology from dplR's default detrending of the same data, detrend(rwl): every series with a spline of 67% of its length." }`
+
+```{r, echo=FALSE}
+if (!is.null(sm) && !is.null(sm$stats)) {
+  row <- function(x) data.frame(rbar = x$stats$rbar.eff, EPS = x$stats$eps, SNR = x$stats$snr,
+                                "Mean r with the others" = mean(x$series$cor, na.rm = TRUE),
+                                check.names = FALSE)
+  tab <- row(sm)
+  rownames(tab) <- "With these settings"
+  if (!is.null(base) && !is.null(base$stats)) {
+    tab <- rbind(tab, row(base))
+    rownames(tab)[2] <- params$baseLabel
+  }
+  kable(tab, digits = 3,
+        caption = paste0("From summary() of the indices. ",
+                         if (is.null(ids)) "Each series counts as one tree." else
+                           paste0(treeCount(ids), ", read from the series names."))) %>% ks()
+}
+```
+
+`r if (length(params$ids$warn)) paste0("dplR was not sure how the series names divide into trees and cores (", paste(params$ids$warn, collapse = "; "), "). Check the grouping before relying on rbar and EPS.")`
+
+`r if (!is.null(params$ids$error)) paste0("The series names could not be read as trees and cores, so every series counts as a tree: ", params$ids$error, ".")`
+
+`r if (!is.null(params$sss)) { f <- sssFrom(params$sss); paste0("**How far back enough trees reach.** The subsample signal strength (SSS, from sss()) says, year by year, how well the chronology from the trees alive that year stands for the one from all of them. ", if (is.na(f)) paste0("Here it does not stay at or above ", signalCut, " to the end of the chronology.") else if (f == min(as.numeric(names(params$sss)))) paste0("Here it is at or above ", signalCut, " throughout.") else paste0("Here it stays at or above ", signalCut, " from ", f, "; the years before are shaded in the plot above."), " ", epsNote) }`
+
+`r if (!is.null(params$running)) "### Signal through time"`
+
+```{r, echo=FALSE, fig.width=10, fig.height=4.5}
+if (!is.null(params$running)) plotSignal(params$running, params$baseRunning, labels = c("With your settings", params$baseLabel), sss = params$sss)
+```
+
+`r if (!is.null(params$running)) paste0("EPS (solid) and rbar (dotted) in windows of ", params$running$end.year[1] - params$running$start.year[1] + 1, " years, each overlapping the last by half, from rwi.stats.running(), over the number of trees in each window (grey). The blue line is SSS, year by year. The dashed line is at 0.85: ", epsNote)`
+
+`r if (is.null(sm) && !is.null(rwi) && ncol(rwi) >= 2) "Statistics across series (rbar, EPS, each series' correlation with the others) had not been computed in iDetrend when this report was made, as happens with large files. The R code at the end computes them: summary(rwi)."`
+
+### The series
+
+```{r, echo=FALSE}
+tab <- settingsTable(dat, S, fits)
+if (!is.null(rwi) && !is.null(sm)) {
+  fit <- seriesFit(rwi, sm, S$series)
+  tab$r     <- round(fit$cor, 3)
+  tab$Trend <- round(fit$trend, 3)
+}
+kable(tab, row.names = FALSE) %>% ks()
+```
+
+Method is what was asked for and Curve used is what dplR fitted, which
+differs when the curve asked for could not be fitted or was not positive.
+`r if (!is.null(rwi) && !is.null(sm)) "r is the series' correlation with the mean of the others (interseries.cor()). Trend is the slope of a straight line through its indices, per century."`
+
+```{r, echo=FALSE, results="asis"}
+flag <- names(st)[vapply(st, function(x) length(x$text) > 0, logical(1))]
+if (length(flag)) {
+  cat("### What dplR did, series by series\n\n")
+  cat("Series fitted as asked, with nothing to add, are not listed.\n\n")
+  for (s in flag) {
+    cat("**", s, "**",
+        switch(st[[s]]$level, error = " (not detrended)", warning = " (look)", ""), "\n\n",
+        paste0("* ", st[[s]]$text, collapse = "\n"), "\n\n", sep = "")
+  }
+}
+```
+
+```{r, echo=FALSE, results="asis"}
+if (length(notes)) {
+  cat("### Notes\n\n")
+  for (s in names(notes)) {
+    cat("**", s, "**\n\n", paste0("> ", strsplit(notes[[s]], "\n")[[1]], collapse = "\n"), "\n\n", sep = "")
+  }
+}
+```
+
+`r if (params$plots) "### Series plots"`
+
+`r if (params$plots) "Above, the series and the fitted curve (red); below, the indices. The top axis counts rings."`
+
+```{r, echo=FALSE, fig.width=9, fig.height=5.6}
+if (params$plots) {
+  for (i in seq_len(nrow(S))) {
+    fit <- fits[[S$series[i]]]
+    sub <- if (!is.null(fit$error)) "Not detrended" else
+      paste0(usedLabel(fit$used), if (nzchar(paramText(S[i, ])) && identical(fit$used, unname(usedIfAsked[S$method[i]])))
+        paste0(", ", paramText(S[i, ])))
+    plotDetrend(years, fit, S$series[i], S[i, ], sub = sub)
+  }
+}
+```
+
+### R Code
+
+```{r, echo=FALSE, comment=""}
+writeLines(params$code)
+```

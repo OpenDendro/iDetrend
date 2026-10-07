@@ -1,7 +1,34 @@
+# iDetrend TODO
 
-see if you can get a title above checkboxes for formatting purposes. ugly as is.
+## Chronology and tree choices are not kept
 
-Improve detrending namws in drop down e.g., "Modified Negative Exponential"
+The kind of chronology, the mean, and how trees are read from the names
+are choices on the Results panel. The report records them, but the copy
+kept in the browser and the settings file do not, so a restored session
+starts with the standard chronology and trees worked out from the names.
+The same goes for settings pinned for comparison: they last for the
+session only.
 
-Get powt choices written into log
+## Statistics on large files
 
+Above 120 series the statistics are computed on request, because summary()
+of the indices takes time that grows with the square of the number of
+series. dplR 1.8.1 makes interseries.cor() several times faster; rwi.stats()
+is then the slow part. Raise the limit when the app moves to 1.8.1.
+
+## Gaps
+
+Every gap in a file is filled the same way. dplR 1.8.1's fill.internal.NA()
+takes `series`, so gaps could be filled series by series, and it adds
+fill = "Chron". Both need 1.8.1.
+
+## Report size
+
+A plot of every series adds about 100 KB a series to the report as drawn
+on a Mac (less with the cairo device a Linux server uses). Check the size
+on the server for a 200-series file.
+
+## Weights for Friedman's smoother
+
+detrend.series() takes case weights (`wt`) for method "Friedman". The app
+does not offer them.
