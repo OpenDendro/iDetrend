@@ -169,7 +169,7 @@ plotChron <- function(crn, base = NULL, labels = c("With your settings", baselin
     u <- par("usr")
     rect(u[1], u[3], sss.from, u[4], col = grDevices::adjustcolor("white", 0.55), border = NA)
     abline(v = sss.from, lty = 3, col = detrendCols$sss)
-    text(sss.from, u[3] + 0.04 * (u[4] - u[3]), paste0(" SSS \u2265 ", signalCut, " from ", sss.from),
+    text(sss.from, u[3] + 0.04 * (u[4] - u[3]), paste0(" SSS \u2265 ", signalCut, " from ", sss.from, " (", signalCut, " is arbitrary)"),
          adj = 0, cex = 0.8, col = detrendCols$sss)
     box(bty = "u")
   }
@@ -185,7 +185,7 @@ plotChron <- function(crn, base = NULL, labels = c("With your settings", baselin
 # between trees) and EPS in windows along the chronology, from
 # rwi.stats.running(), over the number of trees in each window. One rbar and
 # one EPS for the whole span hide that both usually fall off where there
-# are few trees. The dashed line is the usual EPS threshold of 0.85.
+# are few trees. The dashed line is at 0.85, the usual and arbitrary cut-off.
 #   run, base — results of rwi.stats.running(); base may be NULL
 #   sss       — optional: SSS for each year, named by year (sssOf()), drawn
 #               as a line. It is by year, not by window, and is the one to

@@ -1596,16 +1596,18 @@ shinyServer(function(session, input, output) {
                     tooltip(bs_icon("question-circle"), paste(
                       "Subsample signal strength, year by year (dplR's sss()): how well the chronology",
                       "from the trees alive in a year stands for the one from all of them. This is the",
-                      "first year from which it stays at or above the cut-off: before it, the chronology",
-                      "rests on too few trees to stand for the whole sample. SSS is the statistic meant",
-                      "for this; running EPS is often used for it in error (Buras 2017).", epsNote,
-                      "See Signal through time for SSS in every year."))),
+                      "first year from which it stays at or above the cut-off: before it, fewer trees",
+                      "carry the chronology and it stands less well for the whole sample. SSS is the",
+                      "statistic meant for this; running EPS is often used for it in error (Buras 2017).",
+                      epsNote, "See Signal through time for SSS in every year."))),
                 div(class = "id-stat-n", yr(from)),
+                div(class = "small text-muted fst-italic", cutNote),
                 if (!is.null(fromB)) div(class = "small text-muted", paste0(baseShort(), ": ", yr(fromB))))
           },
           stat("Mean r with the others", mean(sm$series$cor, na.rm = TRUE),
                if (!is.null(base)) mean(base$series$cor, na.rm = TRUE), 3,
                "Each series' correlation with the mean of the others (interseries.cor()), averaged.")),
+      helpText(class = "mt-2 mb-0", statsOfNote),
       if (!is.null(base)) {
         if (usePinned()) {
           helpText(class = "mt-2 mb-0",

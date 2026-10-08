@@ -108,7 +108,7 @@ if (!is.null(sm) && !is.null(sm$stats)) {
     rownames(tab)[2] <- params$baseLabel
   }
   kable(tab, digits = 3,
-        caption = paste0("From summary() of the indices. ",
+        caption = paste0("From summary() of the indices. ", statsOfNote, " ",
                          if (is.null(ids)) "Each series counts as one tree." else
                            paste0(treeCount(ids), ", read from the series names."))) %>% ks()
 }

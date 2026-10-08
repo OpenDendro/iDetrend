@@ -49,7 +49,7 @@ setControls <- function(session, key, s, n, ...) {
 testServer(srv, {
   ok(grepl("try one of two", output$fileUI$html) && grepl("Start here", output$fileUI$html) &&
        grepl("Douglas-fir, New Mexico", output$fileUI$html) && grepl("Ponderosa pine, Arizona", output$fileUI$html) &&
-       grepl("stand that grew crowded", output$fileUI$html) &&
+       grepl("in a crowding stand", output$fileUI$html) &&
        grepl("useDemo", output$fileUI$html) && grepl("useDemo2", output$fileUI$html) &&
        grepl("idetrend|iDetrend|svg", output$overviewUI$html),
      "before a file is loaded: both examples are offered, and the welcome screen draws")
@@ -156,6 +156,7 @@ testServer(srv, {
   # Results
   session$setInputs(navbar = "ResultsTab")
   output$resultsAlerts; output$resultsPlot; output$statsUI; output$seriesTable
+  ok(grepl("not the chronology", output$statsUI$html), "the Results panel says the statistics are of the indices, not the chronology")
   ok(grepl("dplR default:", output$statsUI$html) && grepl("detrend(rwl)", output$statsUI$html, fixed = TRUE),
      "statistics shown against dplR's default detrending, named as such")
 

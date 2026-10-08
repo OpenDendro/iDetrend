@@ -549,14 +549,23 @@ sssOf <- function(rwi, ids) {
   stats::setNames(as.numeric(res), rownames(rwi))
 }
 
-# The cut-off for SSS, and for the line drawn at that EPS. A convention and
-# no more: see epsNote.
+# The cut-off for SSS, and for the line drawn at that EPS. Arbitrary: a
+# convention and no more. Wherever the app shows the number it says so
+# (cutNote in sight, epsNote in the longer text).
 signalCut <- 0.85
+cutNote <- paste(signalCut, "is an arbitrary cut-off")
 epsNote <- paste(
-  "0.85 is a common cut-off and an arbitrary one. Wigley et al. (1984) offered it",
-  "as a rough guide for SSS, and gave no threshold for EPS (Buras 2017). Neither",
-  "number says whether a chronology suits a climate reconstruction: read them as",
-  "matters of degree.")
+  "The 0.85 is arbitrary. No test or theory sets it, and a chronology is not",
+  "sound at 0.85 and unsound at 0.84. Wigley et al. (1984) offered it as a",
+  "rough guide for SSS, and gave no threshold for EPS (Buras 2017). Neither",
+  "number says whether a chronology suits a climate reconstruction: read them",
+  "as matters of degree.")
+
+# The statistics describe the indices, not the chronology drawn from them:
+# said under the statistics and in the report.
+statsOfNote <- paste(
+  "These describe the detrended indices, not the chronology: they are the same",
+  "whichever kind of chronology is chosen, and whether or not its mean is robust.")
 
 # The first year from which SSS stays at or above `cut` to the end of the
 # chronology: where the chronology becomes reliable, by that cut-off. NA

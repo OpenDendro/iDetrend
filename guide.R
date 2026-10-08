@@ -214,7 +214,9 @@ gpSteps <- list(
          "names. Two cores of one tree agree more than two trees do, so EPS",
          "counts trees: 0.87 here, where counting every core as a tree would",
          "give 0.91. <b>SSS &ge; 0.85 from 1706</b>: before that year only three",
-         "of the eight trees reach back, and the plot shades it."))
+         "of the eight trees reach back, and the plot shades it. The 0.85 is",
+         "arbitrary. 1706 is the year a fourth tree begins, and nothing else",
+         "about the chronology changes there."))
 )
 
 gpFinished <- paste(

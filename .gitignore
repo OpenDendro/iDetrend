@@ -30,6 +30,5 @@ vignettes/*.pdf
 # grrr
 **/rsconnect/
 rsconnect/
-
 Rplots.pdf
 smoke-itrdb.rds
