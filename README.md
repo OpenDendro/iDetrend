@@ -100,6 +100,11 @@ of the app. Regenerate both when a package or a file of the app changes:
     renv::snapshot()
     rsconnect::writeManifest()
 
+rsconnect is not one of the app's packages, so it is not in the renv
+library and `writeManifest()` fails with "there is no package called
+'rsconnect'" until it is installed there: `renv::install("rsconnect")`.
+That does not change `renv.lock`.
+
 `.rscignore` keeps the tests and notes out of the deployed app.
 
 ## Citation
